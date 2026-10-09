@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aria-evals-catalog"
+version = "0.1.0"
+description = "Public evaluation examples and reproducible runner contracts for Aria"
+requires-python = ">=3.12,<3.14"
+dependencies = ["PyYAML>=6.0.2,<7"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.3,<10"]
+runner = ["aria-code @ git+https://github.com/artheras/aria-code.git@08c28983e5a9548fdce65c911ebe2b645be39dbe"]
+
+[project.scripts]
+aria-evals = "aria_evals.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["aria_evals*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

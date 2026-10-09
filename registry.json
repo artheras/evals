@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "catalog_version": "0.1.0",
+  "suite": "evals/suites/public.yaml",
+  "fixtures": "evals/fixtures",
+  "engine": {
+    "repository": "artheras/aria-code",
+    "commit": "08c28983e5a9548fdce65c911ebe2b645be39dbe",
+    "distribution_version": "0.118.0"
+  },
+  "dataset_role": "public_demonstration"
+}

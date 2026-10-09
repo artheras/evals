@@ -1,0 +1,41 @@
+suite: aria-public-demos-v1
+tasks:
+  - id: demo-maze-route-v1
+    fixture: maze_route
+    prompt: >-
+      Read maze.txt as a rectangular maze. # marks walls, . marks floor, S is the start,
+      E is the exit. Move one cell at a time using U/R/D/L; never cross a wall or leave
+      the grid. Create route.txt containing only a shortest legal sequence that reaches
+      E (any shortest route is accepted; a final newline is allowed). Keep maze.txt unchanged.
+    verify: "{python} -m pytest -q --noconftest -p no:cacheprovider test_route.py"
+    requires: [pytest]
+    protect: [maze.txt, test_route.py]
+    hidden: [test_route.py]
+    tags: [demo, planning]
+  - id: demo-bracket-repair-v1
+    fixture: bracket_repair
+    prompt: >-
+      Read fragments.txt line by line. Scan each fragment left to right. Emit every opening
+      bracket and push its matching closer on a stack. Emit a closing bracket only when it
+      matches the top of the stack, then pop it; discard every other closing bracket.
+      At the end, append the remaining stack closers in reverse stack order. Create
+      normalized.txt with one repaired fragment per input line in the same order; use
+      only bracket characters and keep fragments.txt unchanged.
+    verify: "{python} -m pytest -q --noconftest -p no:cacheprovider test_brackets.py"
+    requires: [pytest]
+    protect: [fragments.txt, test_brackets.py]
+    hidden: [test_brackets.py]
+    tags: [demo, transformation]
+  - id: demo-word-histogram-v1
+    fixture: word_histogram
+    prompt: >-
+      Read source.txt. A token is a maximal contiguous run of ASCII letters A-Z or a-z.
+      Lowercase each token and count occurrences; punctuation and other characters separate
+      tokens. Create histogram.csv with exactly the header token,count and one row per
+      distinct token. Use positive integer counts and ascending alphabetical token order.
+      Keep source.txt unchanged.
+    verify: "{python} -m pytest -q --noconftest -p no:cacheprovider test_histogram.py"
+    requires: [pytest]
+    protect: [source.txt, test_histogram.py]
+    hidden: [test_histogram.py]
+    tags: [demo, parsing]
