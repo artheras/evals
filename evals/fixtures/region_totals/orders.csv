@@ -1,0 +1,13 @@
+order_id,customer_id,status,amount_cents
+o1,c1,paid,12050
+o2,c2,paid,8000
+o3,c3,refunded,99900
+o4,c1,paid,2500
+o5,c4,pending,7000
+o6,c9,paid,16600
+o7,c5,paid,8000
+o8,c3,paid,9500
+o9,c4,paid,33000
+o10,c2,refunded,1200
+o11,c9,paid,900
+o12,c5,paid,1500

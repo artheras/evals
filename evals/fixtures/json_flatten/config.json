@@ -1,0 +1,54 @@
+{
+  "service": {
+    "name": "billing",
+    "port": 8080,
+    "debug": false,
+    "tags": [
+      "a",
+      "b"
+    ],
+    "limits": {}
+  },
+  "db": {
+    "host": "localhost",
+    "replicas": [
+      {
+        "host": "r1",
+        "weight": 0.5
+      },
+      {
+        "host": "r2",
+        "weight": 2.25
+      }
+    ],
+    "password": null
+  },
+  "features": [],
+  "retries": 3,
+  "A": {
+    "z": 1,
+    "b": true
+  },
+  "service2": [
+    [
+      1,
+      2
+    ],
+    [
+      3
+    ]
+  ],
+  "list": [
+    10,
+    20,
+    30,
+    40,
+    50,
+    60,
+    70,
+    80,
+    90,
+    100,
+    110
+  ]
+}

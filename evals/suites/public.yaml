@@ -1,41 +1,301 @@
-suite: aria-public-demos-v1
+suite: aria-public-v2
 tasks:
-  - id: demo-maze-route-v1
-    fixture: maze_route
-    prompt: >-
-      Read maze.txt as a rectangular maze. # marks walls, . marks floor, S is the start,
-      E is the exit. Move one cell at a time using U/R/D/L; never cross a wall or leave
-      the grid. Create route.txt containing only a shortest legal sequence that reaches
-      E (any shortest route is accepted; a final newline is allowed). Keep maze.txt unchanged.
-    verify: "{python} -m pytest -q --noconftest -p no:cacheprovider test_route.py"
-    requires: [pytest]
-    protect: [maze.txt, test_route.py]
-    hidden: [test_route.py]
-    tags: [demo, planning]
-  - id: demo-bracket-repair-v1
-    fixture: bracket_repair
-    prompt: >-
-      Read fragments.txt line by line. Scan each fragment left to right. Emit every opening
-      bracket and push its matching closer on a stack. Emit a closing bracket only when it
-      matches the top of the stack, then pop it; discard every other closing bracket.
-      At the end, append the remaining stack closers in reverse stack order. Create
-      normalized.txt with one repaired fragment per input line in the same order; use
-      only bracket characters and keep fragments.txt unchanged.
-    verify: "{python} -m pytest -q --noconftest -p no:cacheprovider test_brackets.py"
-    requires: [pytest]
-    protect: [fragments.txt, test_brackets.py]
-    hidden: [test_brackets.py]
-    tags: [demo, transformation]
-  - id: demo-word-histogram-v1
-    fixture: word_histogram
-    prompt: >-
-      Read source.txt. A token is a maximal contiguous run of ASCII letters A-Z or a-z.
-      Lowercase each token and count occurrences; punctuation and other characters separate
-      tokens. Create histogram.csv with exactly the header token,count and one row per
-      distinct token. Use positive integer counts and ascending alphabetical token order.
-      Keep source.txt unchanged.
-    verify: "{python} -m pytest -q --noconftest -p no:cacheprovider test_histogram.py"
-    requires: [pytest]
-    protect: [source.txt, test_histogram.py]
-    hidden: [test_histogram.py]
-    tags: [demo, parsing]
+- id: demo-maze-route-v1
+  fixture: maze_route
+  prompt: 'Read maze.txt as a rectangular maze. # marks walls, . marks floor, S is the start, E is the
+    exit. Move one cell at a time using U/R/D/L; never cross a wall or leave the grid. Create route.txt
+    containing only a shortest legal sequence that reaches E (any shortest route is accepted; a final
+    newline is allowed). Keep maze.txt unchanged.'
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_route.py'
+  requires:
+  - pytest
+  protect:
+  - maze.txt
+  - test_route.py
+  hidden:
+  - test_route.py
+  tags:
+  - demo
+  - planning
+- id: demo-bracket-repair-v1
+  fixture: bracket_repair
+  prompt: Read fragments.txt line by line. Scan each fragment left to right. Emit every opening bracket
+    and push its matching closer on a stack. Emit a closing bracket only when it matches the top of the
+    stack, then pop it; discard every other closing bracket. At the end, append the remaining stack closers
+    in reverse stack order. Create normalized.txt with one repaired fragment per input line in the same
+    order; use only bracket characters and keep fragments.txt unchanged.
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_brackets.py'
+  requires:
+  - pytest
+  protect:
+  - fragments.txt
+  - test_brackets.py
+  hidden:
+  - test_brackets.py
+  tags:
+  - demo
+  - transformation
+- id: demo-word-histogram-v1
+  fixture: word_histogram
+  prompt: Read source.txt. A token is a maximal contiguous run of ASCII letters A-Z or a-z. Lowercase
+    each token and count occurrences; punctuation and other characters separate tokens. Create histogram.csv
+    with exactly the header token,count and one row per distinct token. Use positive integer counts and
+    ascending alphabetical token order. Keep source.txt unchanged.
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_histogram.py'
+  requires:
+  - pytest
+  protect:
+  - source.txt
+  - test_histogram.py
+  hidden:
+  - test_histogram.py
+  tags:
+  - demo
+  - parsing
+- id: log-run-compression-v1
+  fixture: log_compress
+  prompt: Read events.log. Collapse each run of two or more identical consecutive lines into one line
+    written as <count>x <line>, for example 3x WARN disk 91%. A line that is not part of such a run stays
+    exactly as it is, and identical lines separated by a different line are separate runs. Keep the original
+    order. Create compressed.log with one line per run and a final newline. Keep events.log unchanged.
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_compress.py'
+  requires:
+  - pytest
+  protect:
+  - events.log
+  - test_compress.py
+  hidden:
+  - test_compress.py
+  tags:
+  - original
+  - coding
+  - text
+- id: semver-ordering-v1
+  fixture: semver_order
+  prompt: 'Read versions.txt, one Semantic Versioning 2.0.0 version per line. Create ordered.txt with
+    the same lines sorted from lowest to highest precedence as defined by semver.org section 11: compare
+    major, minor and patch numerically; a version with a pre-release is lower than the same version without
+    one; pre-release identifiers are compared left to right, numeric identifiers numerically and lower
+    than alphanumeric ones, which compare in ASCII order, and a shorter list is lower when all earlier
+    identifiers are equal. Build metadata after + is ignored when comparing, so versions that differ only
+    in build metadata keep their input order. Keep versions.txt unchanged.'
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_semver.py'
+  requires:
+  - pytest
+  protect:
+  - test_semver.py
+  - versions.txt
+  hidden:
+  - test_semver.py
+  tags:
+  - original
+  - coding
+  - parsing
+- id: paid-orders-by-region-v1
+  fixture: region_totals
+  prompt: customers.csv maps customer_id to region and orders.csv lists orders. Count only orders whose
+    status is exactly paid. Join each to its customer's region; an order whose customer_id is missing
+    from customers.csv belongs to the region UNKNOWN. Create totals.csv with the exact header region,orders,total_cents
+    and one row per region that has at least one paid order, giving the number of paid orders and the
+    sum of amount_cents as integers. Sort rows by total_cents descending, then by region name ascending.
+    Keep both inputs unchanged.
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_totals.py'
+  requires:
+  - pytest
+  protect:
+  - customers.csv
+  - orders.csv
+  - test_totals.py
+  hidden:
+  - test_totals.py
+  tags:
+  - original
+  - coding
+  - data
+- id: json-key-flattening-v1
+  fixture: json_flatten
+  prompt: Read config.json and flatten it into flat.txt, one line per leaf written as path=value with
+    a final newline. A path joins object keys with a dot and writes a list index in square brackets directly
+    after the preceding path, for example db.replicas[1].host. Write strings without quotes, numbers in
+    their shortest decimal form, booleans as true or false and null as null. An empty object is a leaf
+    with the value {} and an empty list a leaf with the value []. Sort the lines by their complete text
+    in plain ascending character order. Keep config.json unchanged.
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_flatten.py'
+  requires:
+  - pytest
+  protect:
+  - config.json
+  - test_flatten.py
+  hidden:
+  - test_flatten.py
+  tags:
+  - original
+  - coding
+  - parsing
+- id: loan-amortization-v1
+  fixture: amortization
+  prompt: loan.txt holds principal, annual_rate_percent and months for a fixed-payment loan. The monthly
+    rate is annual_rate_percent / 12 / 100. The level payment is principal * r / (1 - (1 + r) ** -months)
+    rounded to cents, half away from zero, computed with exact Decimal arithmetic of at least 28 significant
+    digits. Each month, interest is balance * r rounded to cents half away from zero, and the principal
+    part is payment - interest. In the last month pay off the remaining balance plus that month's interest
+    so the final balance is exactly 0.00, which makes the final payment differ slightly from the level
+    payment. Create schedule.csv with the header month,payment,interest,principal,balance and one row
+    per month, every amount with exactly two decimals. Keep loan.txt unchanged.
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_schedule.py'
+  requires:
+  - pytest
+  protect:
+  - loan.txt
+  - test_schedule.py
+  hidden:
+  - test_schedule.py
+  tags:
+  - original
+  - finance
+  - decimal
+- id: fifo-realized-gains-v1
+  fixture: fifo_gains
+  prompt: trades.csv lists trades in date order. Match each SELL against earlier BUY lots of the same
+    symbol first-in-first-out, never mixing symbols, and splitting a lot when a sale uses part of it.
+    Create gains.csv with the header date,symbol,qty,proceeds,cost,gain and one row per SELL in input
+    order, where proceeds is qty times the sale price, cost is the total purchase price of the matched
+    quantity, and gain is proceeds minus cost, each with exactly two decimals. Keep trades.csv unchanged.
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_gains.py'
+  requires:
+  - pytest
+  protect:
+  - test_gains.py
+  - trades.csv
+  hidden:
+  - test_gains.py
+  tags:
+  - original
+  - finance
+  - decimal
+- id: max-drawdown-v1
+  fixture: max_drawdown
+  prompt: 'prices.csv holds daily closing prices in date order. The maximum drawdown is the largest percentage
+    fall from a running peak to a later close: for each day, compare the close with the highest close
+    up to and including that day. Create drawdown.json, a JSON object with max_drawdown_pct (a number:
+    the percentage fall rounded half up to two decimals, so 42.5 means 42.5 percent), peak_date and trough_date
+    (the dates of the peak close and of the lowest close after it that define that largest fall; use the
+    earliest dates on ties) and recovery_date (the first date after the trough on which the close is back
+    at or above the peak close, or null if it never is). Keep prices.csv unchanged.'
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_drawdown.py'
+  requires:
+  - pytest
+  protect:
+  - prices.csv
+  - test_drawdown.py
+  hidden:
+  - test_drawdown.py
+  tags:
+  - original
+  - finance
+  - analysis
+- id: portfolio-weights-v1
+  fixture: largest_remainder
+  prompt: 'holdings.csv lists positions; a position''s value is qty times price. Create weights.csv with
+    the exact header symbol,weight_percent and one row per symbol, sorted by symbol, where each weight
+    is the position''s share of total value in percent with exactly two decimals and the weights add up
+    to exactly 100.00. Allocate by the largest remainder method in units of 0.01 percent: give every symbol
+    the floor of its exact share, then hand out the leftover units one each to the symbols with the largest
+    fractional remainders, breaking ties in favour of the symbol that sorts first. Keep holdings.csv unchanged.'
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_weights.py'
+  requires:
+  - pytest
+  protect:
+  - holdings.csv
+  - test_weights.py
+  hidden:
+  - test_weights.py
+  tags:
+  - original
+  - finance
+  - decimal
+- id: dock-door-schedule-v1
+  fixture: dock_schedule
+  prompt: appointments.csv lists trucks arriving at a depot with two unloading doors, numbered 1 and 2,
+    both free at 00:00. Handle trucks in order of arrival time, breaking ties by id. Each truck takes
+    the door that becomes free earliest, the lower-numbered door on a tie, and starts at the later of
+    its arrival and that door's free time; unloading takes duration_min minutes without a break. Create
+    schedule.csv with the exact header id,door,start,end,wait_min and one row per truck, with times as
+    HH:MM and wait_min as the minutes between arrival and start. Sort rows by start time, then by id.
+    Keep appointments.csv unchanged.
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_dock.py'
+  requires:
+  - pytest
+  protect:
+  - appointments.csv
+  - test_dock.py
+  hidden:
+  - test_dock.py
+  tags:
+  - original
+  - logistics
+  - scheduling
+- id: billable-weight-charges-v1
+  fixture: billable_weight
+  prompt: shipments.csv lists parcels and rates.csv lists price bands. A parcel's volumetric weight is
+    length * width * height in cubic centimetres divided by 5000, in kilograms. Its billable weight is
+    the larger of the actual and volumetric weights, rounded up to the next multiple of 0.5 kg (an exact
+    multiple stays as it is). The price per kg comes from the first band, in file order, whose upto_kg
+    is greater than or equal to the billable weight, where inf means no limit. The charge is billable
+    weight times that price, rounded half up to cents. Create charges.csv with the header id,billable_kg,charge
+    and one row per parcel in input order, billable_kg with one decimal and charge with two. Keep both
+    inputs unchanged.
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_charges.py'
+  requires:
+  - pytest
+  protect:
+  - rates.csv
+  - shipments.csv
+  - test_charges.py
+  hidden:
+  - test_charges.py
+  tags:
+  - original
+  - logistics
+  - decimal
+- id: serpentine-pick-path-v1
+  fixture: pick_sequence
+  prompt: 'A picker walks a warehouse aisle by aisle starting at aisle 1, in a serpentine route: odd-numbered
+    aisles are walked from bay 1 upward and even-numbered aisles from the highest bay downward. order_lines.csv
+    lists the lines of several orders and locations.csv gives each sku''s aisle and bay. Pick every sku
+    once for all orders together, adding up its quantities. Create picklist.csv with the exact header
+    seq,sku,aisle,bay,total_qty and one row per distinct sku in walking order, with seq counting from
+    1. Keep both inputs unchanged.'
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_picks.py'
+  requires:
+  - pytest
+  protect:
+  - locations.csv
+  - order_lines.csv
+  - test_picks.py
+  hidden:
+  - test_picks.py
+  tags:
+  - original
+  - logistics
+  - planning
+- id: reorder-plan-v1
+  fixture: reorder_plan
+  prompt: 'stock.csv describes each sku''s inventory. Its inventory position is on_hand + on_order. A
+    sku needs reordering when its position is less than or equal to its reorder point, daily_demand *
+    lead_days + safety_stock. The order quantity brings the position up towards max_stock without exceeding
+    it, in whole cases only: (max_stock - position) rounded down to a multiple of case_size. Skip skus
+    that need no reorder and skus whose order quantity would be 0. Create reorder.csv with the exact header
+    sku,order_qty and the remaining skus sorted by sku. Keep stock.csv unchanged.'
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_reorder.py'
+  requires:
+  - pytest
+  protect:
+  - stock.csv
+  - test_reorder.py
+  hidden:
+  - test_reorder.py
+  tags:
+  - original
+  - logistics
+  - planning
