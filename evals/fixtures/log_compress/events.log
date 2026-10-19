@@ -1,0 +1,15 @@
+INFO service started
+WARN disk 91%
+WARN disk 91%
+WARN disk 91%
+INFO heartbeat
+INFO heartbeat
+ERROR db timeout
+INFO heartbeat
+INFO heartbeat
+INFO heartbeat
+INFO heartbeat
+WARN disk 91%
+ERROR db timeout
+ERROR db timeout
+INFO service stopped

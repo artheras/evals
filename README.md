@@ -27,7 +27,7 @@ python -m pip install -e '.[dev,runner]'
 aria-evals check --output runs/preflight
 ```
 
-`check` delegates to the engine's no-op solver. All three unfinished tasks must produce the native outcome `fail`; that expected result makes the preflight succeed. It confirms that an empty answer cannot pass. It does not evaluate a model.
+`check` delegates to the engine's no-op solver. Every unfinished task must produce the native outcome `fail`; that expected result makes the preflight succeed. It confirms that an empty answer cannot pass. It does not evaluate a model.
 
 ## Run a model later
 

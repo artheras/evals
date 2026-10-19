@@ -63,7 +63,7 @@ def test_explicit_model_settings_reach_runner(monkeypatch, tmp_path):
     assert command[command.index("--solve-timeout") + 1] == "60"
     assert options["env"]["ARIA_LLM_PROVIDER"] == "openai"
     summary = json.loads((output / "summary.json").read_text())
-    assert summary["trials"] == 6 and summary["performance"]["completion_rate_all_trials"] == 0
+    assert summary["trials"] == 2 * validate_catalog(ROOT)["task_count"] and summary["performance"]["completion_rate_all_trials"] == 0
     assert summary["context"]["model"] == "openai/example-model"
 
 

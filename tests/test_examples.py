@@ -14,12 +14,49 @@ FIXTURES = Path(__file__).resolve().parents[1] / "evals" / "fixtures"
 GRADERS = {
     "maze_route": "test_route.py", "bracket_repair": "test_brackets.py",
     "word_histogram": "test_histogram.py",
+    "log_compress": "test_compress.py",
+    "semver_order": "test_semver.py",
+    "region_totals": "test_totals.py",
+    "json_flatten": "test_flatten.py",
+    "amortization": "test_schedule.py",
+    "fifo_gains": "test_gains.py",
+    "max_drawdown": "test_drawdown.py",
+    "largest_remainder": "test_weights.py",
+    "dock_schedule": "test_dock.py",
+    "billable_weight": "test_charges.py",
+    "pick_sequence": "test_picks.py",
+    "reorder_plan": "test_reorder.py",
 }
 OUTPUTS = {
     "maze_route": "route.txt", "bracket_repair": "normalized.txt",
     "word_histogram": "histogram.csv",
+    "log_compress": "compressed.log",
+    "semver_order": "ordered.txt",
+    "region_totals": "totals.csv",
+    "json_flatten": "flat.txt",
+    "amortization": "schedule.csv",
+    "fifo_gains": "gains.csv",
+    "max_drawdown": "drawdown.json",
+    "largest_remainder": "weights.csv",
+    "dock_schedule": "schedule.csv",
+    "billable_weight": "charges.csv",
+    "pick_sequence": "picklist.csv",
+    "reorder_plan": "reorder.csv",
 }
-INPUTS = {"maze_route": "maze.txt", "bracket_repair": "fragments.txt", "word_histogram": "source.txt"}
+INPUTS = {"maze_route": "maze.txt", "bracket_repair": "fragments.txt", "word_histogram": "source.txt",
+    "log_compress": "events.log",
+    "semver_order": "versions.txt",
+    "region_totals": "customers.csv",
+    "json_flatten": "config.json",
+    "amortization": "loan.txt",
+    "fifo_gains": "trades.csv",
+    "max_drawdown": "prices.csv",
+    "largest_remainder": "holdings.csv",
+    "dock_schedule": "appointments.csv",
+    "billable_weight": "rates.csv",
+    "pick_sequence": "locations.csv",
+    "reorder_plan": "stock.csv",
+}
 
 
 def _prepare(tmp_path, fixture):
