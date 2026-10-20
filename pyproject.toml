@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "aria-evals-catalog"
 version = "0.1.0"
 description = "Public evaluation examples and reproducible runner contracts for Aria"
+license = { text = "Apache-2.0" }
 requires-python = ">=3.12,<3.14"
 dependencies = ["PyYAML>=6.0.2,<7"]
 

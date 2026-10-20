@@ -4,7 +4,7 @@ Contribute original public tasks, grader improvements, and reproducibility fixes
 
 ## Public task requirements
 
-Use original synthetic material or material you have permission to redistribute under this repository's MIT license. Document the source and any applicable rights. Do not submit private evaluation questions, reference answers, confidential grader rules, private transcripts, or private run logs.
+Use original synthetic material or material you have permission to redistribute under this repository's Apache License 2.0. Document the source and any applicable rights. Do not submit private evaluation questions, reference answers, confidential grader rules, private transcripts, or private run logs.
 
 A task needs a clear prompt, a small self-contained fixture, an executable deterministic grader, and meaningful calibration. Add a correct reference solution and incorrect solutions that exercise plausible failure modes. Check that missing answers fail, protected inputs cannot be changed to satisfy the grader, and output symlinks cannot redirect grading outside the workspace.
 
@@ -39,4 +39,4 @@ Keep generated runs out of commits. Report fixes should preserve the distinction
 
 Describe the problem, the resulting behavior, and relevant validation in your pull request. If the change introduces a new task, explain its provenance and what its negative examples demonstrate.
 
-By contributing, you agree that your original contributions are provided under this repository's MIT license.
+By contributing, you agree that your original contributions are provided under this repository's Apache License 2.0.

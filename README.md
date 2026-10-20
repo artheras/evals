@@ -60,4 +60,4 @@ CI performs offline proof checks without model credentials, including positive r
 
 ## License
 
-The original files in this repository are [MIT licensed](LICENSE). Aria Code is a separate dependency governed by its own license.
+The original files in this repository are [Apache License 2.0 licensed](LICENSE) (see [NOTICE](NOTICE) for the earlier MIT history). Aria Code is a separate dependency governed by its own license.
