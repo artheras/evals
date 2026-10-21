@@ -58,6 +58,23 @@ The wrapper normalizes provider aliases and passes an explicit `provider/model` 
 
 The summary records `pass`, `fail`, `invalid`, and `error` counts. Model runs expose both the completion rate over every returned trial and the engine's rate over scored `pass`/`fail` trials. Preflight summaries have no performance score. Usage and cost are `null` when unavailable; they are not assumed to be zero.
 
+## Run a model on GitHub instead of a laptop
+
+**Actions → Model evaluation → Run workflow** runs the suite on a GitHub runner, which avoids one machine's flaky connection to a provider. It is started by hand only and spends provider credit. First add the provider's key as a repository secret (`OPENAI_API_KEY`, `DEEPSEEK_API_KEY`, `GOOGLE_API_KEY` or `ANTHROPIC_API_KEY`); a missing key stops the run before any task starts. The job runs the model-free preflight first, then the suite, and keeps `summary.json` as an artifact for 90 days.
+
+## Usage and cost
+
+When the pinned engine reports token usage, `summary.json` includes `usage`: input, output and thinking tokens, with `reported_trials` and `trials`. Totals cover only the trials that reported usage, so 12 of 30 is not the cost of the run. Trials with no report leave usage `null`, never zero.
+
+A cost appears only with `--prices FILE`, a dated price table you supply:
+
+```json
+{"as_of": "2026-10-21", "source": "https://the-provider's-pricing-page", "currency": "USD",
+ "per_million_tokens": {"input": 0.0, "output": 0.0, "thinking": 0.0}}
+```
+
+`thinking` defaults to the output rate. The table is read before the run starts, and its date and source are copied into `cost_basis`, because prices change and differ by account. In the workflow, a table at `prices/<provider>.json` is used if present. The repository ships no prices: none have been verified here.
+
 ## Reproducibility and scope
 
 [`registry.json`](registry.json) pins the engine to Aria Code commit [`983961bf9c4a6016b8c9b30b7ae54d5f18041827`](https://github.com/artheras/aria-code/tree/983961bf9c4a6016b8c9b30b7ae54d5f18041827). The wrapper checks the installed engine's source identity. That commit follows the `v0.163.0` release and still reports distribution version `0.163.0`, because Aria Code only bumps its version when it publishes; the commit, not the version string, is the identity. It is the first revision whose acceptance check runs a project's tests even when they sit beside the code, reports a check whose tool is missing as not run, scores a finished-but-red agent run instead of excluding it, and lets the agent create short files (earlier revisions refused any file under 20 characters, which made a one-line answer file impossible to write). Results recorded on earlier revisions are not comparable. Use the `runner` extra above to install that immutable Git revision. A different engine revision needs an explicit registry update and renewed validation.

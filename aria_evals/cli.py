@@ -16,7 +16,7 @@ import uuid
 import yaml
 
 from .catalog import validate_catalog
-from .reporting import publication_summary, write_json
+from .reporting import load_prices, publication_summary, write_json
 
 
 def provider_contract():
@@ -85,6 +85,8 @@ def execute(root: Path, args) -> int:
     identity = engine_identity(catalog["manifest"]["engine"])
     check = args.command == "check"
     provider, model = (None, None) if check else resolve_model(args.provider, args.model)
+    # Read the price table before anything runs: a typo found after the run has been paid for.
+    prices = load_prices(Path(args.prices).expanduser()) if getattr(args, "prices", None) else None
     repeat = 1 if check else args.repeat
     output = (Path(args.output).expanduser().resolve() if args.output else
               root / "runs" / (datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:8]))
@@ -122,7 +124,7 @@ def execute(root: Path, args) -> int:
         raise ValueError("Native report has missing, duplicated or unexpected task attempts")
     if validate_catalog(root)["content_sha256"] != catalog["content_sha256"]:
         raise ValueError("Catalog content changed during execution")
-    summary = publication_summary(native, manifest)
+    summary = publication_summary(native, manifest, prices)
     write_json(output / "summary.json", summary)
     print(json.dumps({"run_kind": manifest["run_kind"], "counts": summary["counts"],
                       "summary": str(output / "summary.json"), "exit_code": result.returncode}))
@@ -151,6 +153,7 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--repeat", type=positive_int, default=1)
     run.add_argument("--solve-timeout", type=positive_int, default=900)
     run.add_argument("--output", help="new directory for local reports (default: ignored runs/)")
+    run.add_argument("--prices", help="dated USD price table (JSON) to turn reported tokens into a cost")
     return parser
 
 
