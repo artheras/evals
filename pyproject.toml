@@ -12,7 +12,7 @@ dependencies = ["PyYAML>=6.0.2,<7"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.3,<10", "numpy>=1.26,<3", "mujoco>=3.2,<4", "trimesh>=4.4,<6"]
-runner = ["aria-code @ git+https://github.com/artheras/aria-code.git@983961bf9c4a6016b8c9b30b7ae54d5f18041827"]
+runner = ["aria-code @ git+https://github.com/artheras/aria-code.git@1138706ec418284ff87ea3219eb8911f29cea57b"]
 
 [project.scripts]
 aria-evals = "aria_evals.cli:main"
