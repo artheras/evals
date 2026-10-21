@@ -1,0 +1,12 @@
+<mujoco model="carriage">
+  <option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast"/>
+  <worldbody>
+    <body name="carriage">
+      <joint name="rail" type="slide" axis="1 0 0" damping="1.0"/>
+      <geom type="box" size="0.08 0.08 0.04" mass="2.0"/>
+    </body>
+  </worldbody>
+  <actuator>
+    <motor joint="rail" gear="1" ctrlrange="-20 20"/>
+  </actuator>
+</mujoco>

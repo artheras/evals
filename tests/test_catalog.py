@@ -31,7 +31,7 @@ def test_source_dependency_matches_registry():
     result = validate_catalog(ROOT)
     dependency = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["optional-dependencies"]["runner"]
     assert dependency == ["aria-code @ git+https://github.com/artheras/aria-code.git@" + result["manifest"]["engine"]["commit"]]
-    assert result["task_count"] == 15
+    assert result["task_count"] == 30
 
 
 def test_input_change_changes_catalog_identity(catalog):

@@ -1,0 +1,24 @@
+{
+  "units": "mm",
+  "plate": {
+    "size": [
+      60,
+      40,
+      5
+    ],
+    "min_corner": [
+      0,
+      0,
+      0
+    ]
+  },
+  "hole": {
+    "centre_xy": [
+      30,
+      20
+    ],
+    "diameter": 10,
+    "through": true,
+    "min_segments": 32
+  }
+}

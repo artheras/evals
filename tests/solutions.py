@@ -718,3 +718,10 @@ TRAPS.update({
     "reorder_plan": {"ignores_open_orders": reorder_ignores_open_orders, "strictly_below": reorder_only_below_the_point,
                      "rounds_up": reorder_rounds_cases_up, "lists_zero": reorder_lists_zero_orders},
 })
+
+
+# Physical-AI tasks (firmware, simulated control, 3D meshes) live in their own module.
+from solutions_physical import SOLUTIONS as _PHYSICAL, TRAPS as _PHYSICAL_TRAPS  # noqa: E402
+
+SOLUTIONS.update(_PHYSICAL)
+TRAPS.update(_PHYSICAL_TRAPS)

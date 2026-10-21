@@ -1,4 +1,4 @@
-suite: aria-public-v2
+suite: aria-public-v3
 tasks:
 - id: demo-maze-route-v1
   fixture: maze_route
@@ -299,3 +299,355 @@ tasks:
   - original
   - logistics
   - planning
+- id: firmware-ring-buffer-v1
+  fixture: fw_ringbuf
+  prompt: 'ringbuf.h declares a byte ring buffer for a microcontroller. Create ringbuf.c implementing
+    every function in it in C99 with no dynamic allocation and no main function. It is a FIFO that holds
+    exactly RB_CAPACITY bytes at once: rb_push adds a byte and returns true, but when the buffer already
+    holds RB_CAPACITY bytes it returns false and changes nothing (it never overwrites). rb_pop removes
+    the oldest byte into *out and returns true, or returns false without writing *out when the buffer
+    is empty. rb_count returns how many bytes are held, and rb_init empties the buffer. It must keep working
+    for any number of operations as the indices wrap around. Keep ringbuf.h unchanged.'
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_ringbuf.py'
+  requires: &id001
+  - pytest
+  protect:
+  - ringbuf.h
+  - test_ringbuf.py
+  hidden:
+  - test_ringbuf.py
+  tags:
+  - original
+  - physical-ai
+  - firmware
+  - c
+- id: firmware-pid-antiwindup-v1
+  fixture: fw_pid
+  prompt: 'pid.h declares a PID controller. Create pid.c implementing it in C99 with no main function.
+    pid_init stores the gains and output limits and resets the state (integral 0, no previous measurement).
+    Each pid_update(setpoint, measurement, dt) computes, in this order: error = setpoint - measurement;
+    the integral term accumulates ki * error * dt and is then clamped to [out_min, out_max]; the derivative
+    term is -kd * (measurement - previous measurement) / dt, taken on the measurement rather than the
+    error so a setpoint step causes no kick, and it is 0 on the first update after pid_init; then the
+    previous measurement is stored. The returned output is kp * error + integral term + derivative term,
+    clamped to [out_min, out_max]. dt may change between calls. Keep pid.h unchanged.'
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_pid.py'
+  requires: *id001
+  protect:
+  - pid.h
+  - test_pid.py
+  hidden:
+  - test_pid.py
+  tags:
+  - original
+  - physical-ai
+  - firmware
+  - c
+  - control
+- id: firmware-crc16-v1
+  fixture: fw_crc16
+  prompt: 'crc16.h declares a CRC used on a serial link. Create crc16.c implementing it in C99 with no
+    main function. The algorithm is CRC-16/CCITT-FALSE: polynomial 0x1021, initial value 0xFFFF, input
+    and output not reflected, no final XOR; the CRC of the ASCII bytes 123456789 is 0x29B1. crc16_update(crc,
+    data, len) continues a CRC from the value crc over len more bytes, so splitting a message into pieces
+    gives the same result as processing it at once, and crc16_ccitt_false(data, len) is crc16_update(0xFFFF,
+    data, len). Keep crc16.h unchanged.'
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_crc16.py'
+  requires: *id001
+  protect:
+  - crc16.h
+  - test_crc16.py
+  hidden:
+  - test_crc16.py
+  tags:
+  - original
+  - physical-ai
+  - firmware
+  - c
+  - protocol
+- id: firmware-debounce-v1
+  fixture: fw_debounce
+  prompt: debounce.h declares a debouncer for a mechanical button sampled once per millisecond. Create
+    debounce.c implementing it in C99 with no main function. debounce_init sets the stable state to initial
+    (0 or 1). Each debounce_sample(raw) takes one sample (0 or 1) and returns the stable state after it.
+    The stable state changes to the new value only on the sample that completes a run of DEBOUNCE_SAMPLES
+    consecutive samples that all differ from the stable state; any sample equal to the stable state cancels
+    the run, so bounces never accumulate across interruptions. After a change, counting starts again from
+    zero. Keep debounce.h unchanged.
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_debounce.py'
+  requires: *id001
+  protect:
+  - debounce.h
+  - test_debounce.py
+  hidden:
+  - test_debounce.py
+  tags:
+  - original
+  - physical-ai
+  - firmware
+  - c
+  - state-machine
+- id: firmware-q15-fixed-point-v1
+  fixture: fw_q15
+  prompt: q15.h declares Q15 fixed-point helpers for a DSP without floating point (a q15_t value v represents
+    v / 32768). Create q15.c implementing them in C99 with no main function. Every result saturates to
+    the q15_t range [-32768, 32767] instead of wrapping. q15_add is the saturating sum. q15_mul forms
+    the exact product of the two raw values in at least 32 bits, adds 16384 and shifts right by 15 (rounding
+    half up, arithmetic shift), then saturates, so q15_mul(-32768, -32768) is 32767. q15_from_double(x)
+    rounds x * 32768 to the nearest integer with ties away from zero, then saturates. Keep q15.h unchanged.
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_q15.py'
+  requires: *id001
+  protect:
+  - q15.h
+  - test_q15.py
+  hidden:
+  - test_q15.py
+  tags:
+  - original
+  - physical-ai
+  - firmware
+  - c
+  - dsp
+- id: control-pendulum-swingup-v1
+  fixture: ctl_swingup
+  prompt: pendulum.xml is a pendulum driven by one torque motor. A joint angle of 0 hangs straight down
+    and pi is straight up. The motor is limited to 2 N·m, less than the torque gravity exerts when the
+    pendulum is horizontal, so it cannot be lifted straight up and must be swung. The grader starts it
+    hanging at rest at angle 0 and simulates 10 seconds. From 6 to 9 seconds it pushes the pendulum with
+    brief torques of 0.6 N·m in alternating directions, which the controller is not told about. From 5
+    seconds to the end the angle must stay within 0.15 rad of upright (any whole number of turns is fine),
+    and in the last 0.5 seconds within 0.02 rad of upright with an angular speed below 0.2 rad/s. Create
+    controller.py defining control(t, qpos, qvel) that returns a list with one actuator command per actuator;
+    qpos and qvel are numpy arrays of the joint positions and velocities in the model's joint order, and
+    t is the simulated time in seconds. The grader calls it before every simulation step at the model's
+    timestep, and the model clamps each command to its control range. Use only the arguments and the files
+    here, and keep pendulum.xml unchanged.
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_control.py'
+  requires: &id002
+  - pytest
+  - mujoco
+  - numpy
+  protect:
+  - pendulum.xml
+  - test_control.py
+  hidden:
+  - test_control.py
+  tags:
+  - original
+  - physical-ai
+  - control
+  - simulation
+  - underactuated
+- id: control-cartpole-balance-v1
+  fixture: ctl_cartpole
+  prompt: cartpole.xml is a cart on a rail (joint slider, metres) carrying a free pole (joint hinge, radians,
+    0 is straight up), pushed by one force motor limited to 10 N. The grader starts the pole tilted 0.15
+    rad with everything at rest and simulates 10 seconds. The pole must never tilt 0.5 rad or more, the
+    cart must never be 1 m or more from where it started, and during the last 2 seconds the pole must
+    be within 0.02 rad of upright and the cart within 0.1 m of its start. Create controller.py defining
+    control(t, qpos, qvel) that returns a list with one actuator command per actuator; qpos and qvel are
+    numpy arrays of the joint positions and velocities in the model's joint order, and t is the simulated
+    time in seconds. The grader calls it before every simulation step at the model's timestep, and the
+    model clamps each command to its control range. Use only the arguments and the files here, and keep
+    cartpole.xml unchanged.
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_control.py'
+  requires: *id002
+  protect:
+  - cartpole.xml
+  - test_control.py
+  hidden:
+  - test_control.py
+  tags:
+  - original
+  - physical-ai
+  - control
+  - simulation
+  - underactuated
+- id: control-arm-reach-v1
+  fixture: ctl_reach
+  prompt: arm.xml is a two-link arm moving in the horizontal plane, with a shoulder and an elbow joint,
+    each driven by a torque motor limited to 5 N·m; the site named tip is the end of the second link.
+    target.json gives a point (x, y) in metres in the model's world frame. The grader starts the arm straight
+    out along +x with both joint angles 0 and at rest, and simulates 5 seconds. From 3 seconds to the
+    end the tip must stay within 1 cm of the target point. Work out the joint angles from the geometry
+    in arm.xml. Create controller.py defining control(t, qpos, qvel) that returns a list with one actuator
+    command per actuator; qpos and qvel are numpy arrays of the joint positions and velocities in the
+    model's joint order, and t is the simulated time in seconds. The grader calls it before every simulation
+    step at the model's timestep, and the model clamps each command to its control range. Use only the
+    arguments and the files here, and keep arm.xml, target.json unchanged.
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_control.py'
+  requires: *id002
+  protect:
+  - arm.xml
+  - target.json
+  - test_control.py
+  hidden:
+  - test_control.py
+  tags:
+  - original
+  - physical-ai
+  - control
+  - simulation
+  - kinematics
+- id: control-speed-limited-move-v1
+  fixture: ctl_speedlimit
+  prompt: carriage.xml is a 2 kg carriage on a rail (joint rail, metres) with viscous friction, pushed
+    by one force motor limited to 20 N. A person works next to it, so its speed must never exceed 0.5
+    m/s, not even briefly. The grader starts it at rest at 0 and simulates 5 seconds. It must move to
+    1.0 m and, from 3.5 seconds to the end, stay within 1 cm of 1.0 m, without its speed ever exceeding
+    0.5 m/s. Create controller.py defining control(t, qpos, qvel) that returns a list with one actuator
+    command per actuator; qpos and qvel are numpy arrays of the joint positions and velocities in the
+    model's joint order, and t is the simulated time in seconds. The grader calls it before every simulation
+    step at the model's timestep, and the model clamps each command to its control range. Use only the
+    arguments and the files here, and keep carriage.xml unchanged.
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_control.py'
+  requires: *id002
+  protect:
+  - carriage.xml
+  - test_control.py
+  hidden:
+  - test_control.py
+  tags:
+  - original
+  - physical-ai
+  - control
+  - simulation
+  - safety
+- id: control-soft-limits-schedule-v1
+  fixture: ctl_softlimits
+  prompt: 'arm.xml is a two-link arm in the horizontal plane with a shoulder and an elbow joint, each
+    driven by a torque motor limited to 8 N·m. targets.json gives soft joint limits in radians (limits,
+    one [low, high] per joint) and a schedule of joint targets: each entry applies from its time in seconds
+    until the next entry starts. A target outside the soft limits must be clamped to them, never followed.
+    The grader starts both joints at 0 at rest and simulates 6 seconds. No joint may ever go more than
+    0.02 rad past its soft limit, and in the last 0.5 s before each next entry starts (and before 6 s
+    for the last one) both joints must be within 0.02 rad of the clamped target. Create controller.py
+    defining control(t, qpos, qvel) that returns a list with one actuator command per actuator; qpos and
+    qvel are numpy arrays of the joint positions and velocities in the model''s joint order, and t is
+    the simulated time in seconds. The grader calls it before every simulation step at the model''s timestep,
+    and the model clamps each command to its control range. Use only the arguments and the files here,
+    and keep arm.xml, targets.json unchanged.'
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_control.py'
+  requires: *id002
+  protect:
+  - arm.xml
+  - targets.json
+  - test_control.py
+  hidden:
+  - test_control.py
+  tags:
+  - original
+  - physical-ai
+  - control
+  - simulation
+  - safety
+- id: mesh-dimensioned-box-v1
+  fixture: mesh_box
+  prompt: 'spec.json describes a rectangular block in millimetres: its size along x, y and z and the corner
+    with the smallest coordinates. Create box.obj, the block in millimetres with that size, placed so
+    its minimum corner is exactly at min_corner. Write it as a Wavefront OBJ text file with v and f lines
+    (triangles, 1-based indices). It must be a closed solid: every edge shared by exactly two triangles,
+    neighbouring triangles wound consistently, and every triangle counter-clockwise when seen from outside,
+    so the normals point outward. Keep spec.json unchanged.'
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_mesh.py'
+  requires: &id003
+  - pytest
+  - trimesh
+  - numpy
+  protect:
+  - spec.json
+  - test_mesh.py
+  hidden:
+  - test_mesh.py
+  tags:
+  - original
+  - physical-ai
+  - 3d
+  - geometry
+  - cad
+- id: mesh-plate-through-hole-v1
+  fixture: mesh_plate_hole
+  prompt: 'spec.json describes a plate in millimetres (size along x, y, z and its minimum corner) with
+    one cylindrical hole drilled straight through it along z, centred at centre_xy, with the given diameter.
+    Create plate.obj: the plate with the hole, placed as specified. Approximate the hole by a regular
+    polygon whose vertices lie on the hole''s circle, with at least min_segments sides. Write it as a
+    Wavefront OBJ text file with v and f lines (triangles, 1-based indices). It must be a closed solid:
+    every edge shared by exactly two triangles, neighbouring triangles wound consistently, and every triangle
+    counter-clockwise when seen from outside, so the normals point outward. Keep spec.json unchanged.'
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_mesh.py'
+  requires: *id003
+  protect:
+  - spec.json
+  - test_mesh.py
+  hidden:
+  - test_mesh.py
+  tags:
+  - original
+  - physical-ai
+  - 3d
+  - geometry
+  - cad
+- id: mesh-convex-hull-v1
+  fixture: mesh_hull
+  prompt: 'points.csv lists 3D points (columns x, y, z). Create hull.obj, their convex hull: the smallest
+    convex closed surface containing every point, whose vertices are input points. Write it as a Wavefront
+    OBJ text file with v and f lines (triangles, 1-based indices). It must be a closed solid: every edge
+    shared by exactly two triangles, neighbouring triangles wound consistently, and every triangle counter-clockwise
+    when seen from outside, so the normals point outward. Keep points.csv unchanged.'
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_mesh.py'
+  requires: *id003
+  protect:
+  - points.csv
+  - test_mesh.py
+  hidden:
+  - test_mesh.py
+  tags:
+  - original
+  - physical-ai
+  - 3d
+  - geometry
+  - algorithms
+- id: mesh-units-and-placement-v1
+  fixture: mesh_units
+  prompt: 'bracket_in.obj is a bracket modelled in inches. Create bracket_mm.obj: the same part in millimetres
+    (1 inch = 25.4 mm), moved, without rotating or mirroring it, so that it rests on the build plate with
+    its lowest point at z = 0 and the centre of its bounding box at x = 0 and y = 0. Keep the same vertices
+    and triangles. Write it as a Wavefront OBJ text file with v and f lines (triangles, 1-based indices).
+    It must be a closed solid: every edge shared by exactly two triangles, neighbouring triangles wound
+    consistently, and every triangle counter-clockwise when seen from outside, so the normals point outward.
+    Keep bracket_in.obj unchanged.'
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_mesh.py'
+  requires: *id003
+  protect:
+  - bracket_in.obj
+  - test_mesh.py
+  hidden:
+  - test_mesh.py
+  tags:
+  - original
+  - physical-ai
+  - 3d
+  - geometry
+  - manufacturing
+- id: mesh-repair-v1
+  fixture: mesh_repair
+  prompt: 'broken.obj is a scanned part that should be a closed solid but is not: some triangles are wound
+    the wrong way and one triangle is missing, leaving a small triangular hole. Create fixed.obj: the
+    repaired part, using only the existing vertices, with the missing triangle filled in and every triangle
+    wound consistently and facing outward. Write it as a Wavefront OBJ text file with v and f lines (triangles,
+    1-based indices). It must be a closed solid: every edge shared by exactly two triangles, neighbouring
+    triangles wound consistently, and every triangle counter-clockwise when seen from outside, so the
+    normals point outward. Keep broken.obj unchanged.'
+  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_mesh.py'
+  requires: *id003
+  protect:
+  - broken.obj
+  - test_mesh.py
+  hidden:
+  - test_mesh.py
+  tags:
+  - original
+  - physical-ai
+  - 3d
+  - geometry
+  - repair
