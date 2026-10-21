@@ -2,9 +2,19 @@
 
 Public evaluation examples and reproducible run records for [Aria Code](https://github.com/artheras/aria-code).
 
-This repository contains three original, synthetic demonstration tasks: a shortest maze route, deterministic bracket repair, and an ASCII word histogram. Each task has an executable grader, a reference solution, and deliberately incorrect solutions used to calibrate that grader. These examples are small, public, and available to contributors. They do not establish performance on unseen tasks.
+This repository contains 30 original, synthetic public tasks. Each has an executable grader that stays hidden while the agent works, a reference solution, and deliberately incorrect solutions used to calibrate that grader.
 
-No real model results have been recorded yet. Offline checks validate the catalog and graders; their success is not a model benchmark score.
+| Group | Tasks | What the answer is | How it is judged |
+|---|---|---|---|
+| Demonstrations | 3 | a text artifact | exact checks (maze route, bracket repair, word histogram) |
+| Coding, finance, logistics | 12 | a text or CSV artifact | exact expected output |
+| Firmware | 5 | a C99 source file implementing a given header | compiled with the system C compiler against a hidden test harness |
+| Control | 5 | a Python controller for a MuJoCo model | simulated; the grader checks stability, limits and targets, sometimes under pushes the controller is not told about |
+| 3D | 5 | an OBJ mesh | geometry: closed, consistently wound, outward, dimensions, topology, volume |
+
+These examples are small, public, and available to contributors. They do not establish performance on unseen tasks.
+
+The physical-AI groups need more than pytest where they are graded: `numpy`, `mujoco` and `trimesh` (installed by the `dev` extra) and a C compiler (`cc`, `gcc` or `clang`). A task whose Python requirements are missing is reported by the engine as `error` and excluded from the score; a firmware task on a machine without a C compiler exits 127, which the engine also reports as `error` rather than as a failed answer.
 
 ## Get started
 
