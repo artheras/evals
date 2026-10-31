@@ -21,7 +21,9 @@ The solid dependency is implemented by this catalog. Dashed connections describe
 
 The public catalog installs a pinned Aria Code engine and calls its official evaluation runner. The catalog wrapper validates the suite, records provenance and settings, and constructs an aggregate summary from an allowlist of fields. It does not maintain a second agent loop.
 
-Public CI validates the catalog, calibrates the graders with correct and incorrect solutions, and exercises the model-free preflight. It uses no model secrets and makes no model calls. Contributors can reproduce these checks before opening a pull request.
+Public CI (the `Proof` workflow, on pull requests and pushes to `main`) validates the catalog, calibrates the graders with correct and incorrect solutions and planted hacks, and exercises the model-free preflight. It uses no model secrets and makes no model calls. Contributors can reproduce these checks before opening a pull request.
+
+The `Model evaluation` workflow is separate: a maintainer starts it by hand for one provider and model. It reads that provider's API key from repository secrets, places only that key in the step that runs the agent, and spends provider credit. It never runs on pull requests.
 
 The private bank stays in its existing private repository. This public repository does not fetch it, depend on access tokens for it, or include its files, Git history, examples, answers, or raw run logs. An agent's ability to access a grader on the host cannot be treated as a secrecy boundary. Holdout execution must retain the private controller's trusted grading and isolation controls.
 
@@ -42,6 +44,23 @@ Keep Aria Code's unit tests and implementation regressions with the product. Pub
 Already published evaluations remain public evaluations after a move. They cannot become fresh holdout evidence by moving to a private repository, renaming them, or changing their formatting. Create and maintain confidential tasks independently, track any exposure or use during tuning, and retire compromised holdout material internally.
 
 The three demonstration tasks in this initial catalog were authored for this repository. They were not extracted from the private bank.
+
+### Tasks that overlap the engine's own suites
+
+Aria Code keeps its own evaluation fixtures, and some public tasks here are close relatives of them. The product may have been developed against those fixtures, so a score on the related public tasks is weaker evidence. These tasks carry the tag `overlaps-engine-suite`:
+
+| Public task | Related Aria Code fixture |
+| --- | --- |
+| `max-drawdown-v1` | `drawdown_running_peak` |
+| `fifo-realized-gains-v1` | `fifo_cost_basis` |
+| `dock-door-schedule-v1` | `dock_windows` |
+| `billable-weight-charges-v1` | `dim_weight_billing` |
+| `reorder-plan-v1` | `inventory_reorder` |
+| `serpentine-pick-path-v1` | `fefo_picking` |
+| `loan-amortization-v1` | `loan_amortization` |
+| `portfolio-weights-v1` | `allocate_cents` |
+
+Report results with and without them. `summary.json` carries `performance.without_engine_suite_overlap` for that purpose. When Aria Code adds a fixture that resembles a public task, tag the public task in the same change.
 
 ## Interpreting results
 

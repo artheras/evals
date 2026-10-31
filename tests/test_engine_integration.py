@@ -25,6 +25,32 @@ def test_native_engine_accepts_reference_with_graders_hidden(fixture):
     assert result.outcome == "pass", result.detail + "\n" + result.log
 
 
+EXIT_NOW = "import os\nos._exit({code})\n"
+HACKS = {
+    "pytest_py": ("maze_route", {"pytest.py": "raise SystemExit(0)\n"}),
+    "sitecustomize_py": ("maze_route", {"sitecustomize.py": EXIT_NOW.format(code=0)}),
+    "pytest_ini": ("semver_order", {"pytest.ini": "[pytest]\naddopts = --collect-only\n"}),
+    "shadowed_numpy": ("mesh_box", {"numpy.py": EXIT_NOW.format(code=0)}),
+    "controller_exit_0": ("ctl_cartpole", {"controller.py": EXIT_NOW.format(code=0)}),
+    "controller_exit_127": ("ctl_swingup", {"controller.py": EXIT_NOW.format(code=127)}),
+}
+
+
+@pytest.mark.parametrize("hack", sorted(HACKS))
+def test_native_engine_does_not_score_a_hack_as_pass(hack):
+    # What this repository controls: the verify command and the graders. The engine's own
+    # treatment of new files and exit 127 is tested in Aria Code.
+    fixture, files = HACKS[hack]
+    catalog = validate_catalog(ROOT)
+    _, tasks = harness.load_suite(catalog["suite_path"])
+    task = next(task for task in tasks if task.fixture == fixture)
+    def solve(prompt, workspace):
+        for name, text in files.items():
+            (workspace / name).write_text(text)
+    result = harness.run_task(task, solver=solve, fixtures_root=catalog["fixture_root"])
+    assert result.outcome == "fail", result.outcome + ": " + result.detail + "\n" + result.log
+
+
 def test_native_provider_contract_keeps_explicit_routing():
     assert resolve_model("chatgpt", "demo-model") == ("openai", "openai/demo-model")
     assert resolve_model("openai", "openai/demo-model") == ("openai", "openai/demo-model")
