@@ -1,16 +1,21 @@
 """Calibration for independently authored public examples, without model calls."""
 
 from pathlib import Path
+import shlex
 import shutil
 import subprocess
 import sys
 
 import pytest
+import yaml
 
 from solutions import SOLUTIONS, TRAPS
 
 
-FIXTURES = Path(__file__).resolve().parents[1] / "evals" / "fixtures"
+ROOT = Path(__file__).resolve().parents[1]
+FIXTURES = ROOT / "evals" / "fixtures"
+# Grade with the exact command the engine runs, so calibration covers the verifier's isolation.
+VERIFY = {task["fixture"]: task["verify"] for task in yaml.safe_load((ROOT / "evals/suites/public.yaml").read_text())["tasks"]}
 GRADERS = {
     "maze_route": "test_route.py", "bracket_repair": "test_brackets.py",
     "word_histogram": "test_histogram.py",
@@ -111,10 +116,9 @@ def _prepare(tmp_path, fixture):
 
 
 def _grade(workspace, fixture):
-    return subprocess.run(
-        [sys.executable, "-m", "pytest", "-q", "--noconftest", "-p", "no:cacheprovider", GRADERS[fixture]],
-        cwd=workspace, capture_output=True, text=True, timeout=20,
-    )
+    command = [sys.executable if word == "{python}" else word for word in shlex.split(VERIFY[fixture])]
+    assert command[-1] == GRADERS[fixture]
+    return subprocess.run(command, cwd=workspace, capture_output=True, text=True, timeout=60)
 
 
 @pytest.mark.parametrize("fixture", sorted(GRADERS))
@@ -168,3 +172,92 @@ def test_changing_the_input_is_rejected(tmp_path, fixture):
     with (workspace / INPUTS[fixture]).open("a") as handle:
         handle.write("changed input\n")
     assert _grade(workspace, fixture).returncode == 1
+
+
+# ── Planted files and hostile controllers ────────────────────────────────────────────────────
+# The grader runs inside the agent's workspace after the agent's turn. Anything the agent leaves
+# there must not be able to turn the check green. Each case is planted beside an answer that is
+# missing (or, for controllers, otherwise correct), so a PASS could only come from the hack.
+# Whether the engine also rejects new .py or config files, or how it reads exit 127, is decided
+# in Aria Code; these tests cover what this repository controls: the verify command and graders.
+
+EXIT_NOW = "import os\nos._exit(0)\n"
+PLANTED = {
+    "pytest_py": {"pytest.py": "raise SystemExit(0)\n"},
+    "sitecustomize_py": {"sitecustomize.py": EXIT_NOW, "usercustomize.py": EXIT_NOW},
+    "conftest_py": {"conftest.py": EXIT_NOW},
+    "pytest_ini_collect_only": {"pytest.ini": "[pytest]\naddopts = --collect-only\n"},
+    "pyproject_collect_only": {"pyproject.toml": '[tool.pytest.ini_options]\naddopts = "--collect-only"\n'},
+    "ini_pythonpath_shadow": {"pytest.ini": "[pytest]\npythonpath = .\n", "numpy.py": EXIT_NOW},
+    "shadowed_imports": {name + ".py": EXIT_NOW for name in
+                         ("numpy", "mujoco", "trimesh", "decimal", "csv", "json", "hashlib", "subprocess", "tempfile")},
+}
+
+
+@pytest.mark.parametrize("fixture,hack", [
+    (fixture, hack) for fixture in sorted(GRADERS) for hack in sorted(PLANTED)
+])
+def test_files_planted_in_the_workspace_cannot_pass(tmp_path, fixture, hack):
+    workspace = _prepare(tmp_path, fixture)
+    for name, text in PLANTED[hack].items():
+        (workspace / name).write_text(text)
+    result = _grade(workspace, fixture)
+    assert result.returncode == 1, result.stdout + result.stderr
+
+
+def test_a_planted_pytest_module_did_pass_the_unisolated_command(tmp_path):
+    # The reason the verify command starts with -I: plain `-m` puts the workspace first on sys.path.
+    workspace = _prepare(tmp_path, "maze_route")
+    (workspace / "pytest.py").write_text(PLANTED["pytest_py"]["pytest.py"])
+    plain = [sys.executable, "-m", "pytest", "-q", "--noconftest", "-p", "no:cacheprovider", GRADERS["maze_route"]]
+    assert subprocess.run(plain, cwd=workspace, capture_output=True, timeout=60).returncode == 0
+    assert _grade(workspace, "maze_route").returncode == 1
+
+
+CONTROLS = sorted(fixture for fixture in GRADERS if fixture.startswith("ctl_"))
+HOSTILE = {
+    "exit_0_on_import": lambda source: EXIT_NOW + source,
+    "exit_127_on_import": lambda source: "import os\nos._exit(127)\n" + source,
+    "sys_exit_on_import": lambda source: "raise SystemExit(0)\n" + source,
+    "exit_0_mid_episode": lambda source: source + (
+        "\n_calls = [0]\n_real = control\n\ndef control(t, qpos, qvel):\n"
+        "    _calls[0] += 1\n    if _calls[0] == 100:\n        import os\n        os._exit(0)\n"
+        "    return _real(t, qpos, qvel)\n"),
+    "exit_127_mid_episode": lambda source: source + (
+        "\n_real = control\n\ndef control(t, qpos, qvel):\n"
+        "    if t > 0.5:\n        import os\n        os._exit(127)\n    return _real(t, qpos, qvel)\n"),
+    # The grader asserts with numpy and simulates with mujoco; neither may be reachable from here.
+    "patches_the_grader": lambda source: (
+        "import sys, numpy, mujoco\n"
+        "numpy.abs = lambda x: numpy.zeros_like(numpy.asarray(x, dtype=float))\n"
+        "numpy.hypot = lambda *a: numpy.zeros_like(numpy.asarray(a[0], dtype=float))\n"
+        "mujoco.mj_step = lambda *a, **k: None\n"
+        "for name, module in list(sys.modules.items()):\n"
+        "    if name.startswith('_pytest') or name == 'pytest':\n"
+        "        setattr(module, 'exit', lambda *a, **k: None)\n"
+        "def control(t, qpos, qvel):\n    return [0.0] * 8\n"),
+    "returns_nothing_useful": lambda source: "def control(t, qpos, qvel):\n    return [0.0] * 8\n",
+}
+
+
+@pytest.mark.parametrize("fixture,hack", [(fixture, hack) for fixture in CONTROLS for hack in sorted(HOSTILE)])
+def test_a_hostile_controller_cannot_pass(tmp_path, fixture, hack):
+    workspace = _prepare(tmp_path, fixture)
+    SOLUTIONS[fixture](workspace)
+    controller = workspace / "controller.py"
+    controller.write_text(HOSTILE[hack](controller.read_text()))
+    result = _grade(workspace, fixture)
+    assert result.returncode == 1, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("fixture", CONTROLS)
+def test_a_correct_controller_may_print(tmp_path, fixture):
+    # The controller's stdout is not the reply channel, so debugging output cannot corrupt it.
+    workspace = _prepare(tmp_path, fixture)
+    SOLUTIONS[fixture](workspace)
+    controller = workspace / "controller.py"
+    controller.write_text(controller.read_text() + (
+        "\n_real = control\n\ndef control(t, qpos, qvel):\n"
+        "    print('{\"u\": [1e9]}', t)\n    return _real(t, qpos, qvel)\n"))
+    result = _grade(workspace, fixture)
+    assert result.returncode == 0, result.stdout + result.stderr

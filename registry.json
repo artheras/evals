@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "catalog_version": "0.3.0",
+  "catalog_version": "0.4.0",
   "suite": "evals/suites/public.yaml",
   "fixtures": "evals/fixtures",
   "engine": {

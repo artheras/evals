@@ -1,4 +1,4 @@
-suite: aria-public-v3
+suite: aria-public-v4
 tasks:
 - id: demo-maze-route-v1
   fixture: maze_route
@@ -6,7 +6,7 @@ tasks:
     exit. Move one cell at a time using U/R/D/L; never cross a wall or leave the grid. Create route.txt
     containing only a shortest legal sequence that reaches E (any shortest route is accepted; a final
     newline is allowed). Keep maze.txt unchanged.'
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_route.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_route.py'
   requires:
   - pytest
   protect:
@@ -24,7 +24,7 @@ tasks:
     stack, then pop it; discard every other closing bracket. At the end, append the remaining stack closers
     in reverse stack order. Create normalized.txt with one repaired fragment per input line in the same
     order; use only bracket characters and keep fragments.txt unchanged.
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_brackets.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_brackets.py'
   requires:
   - pytest
   protect:
@@ -41,7 +41,7 @@ tasks:
     each token and count occurrences; punctuation and other characters separate tokens. Create histogram.csv
     with exactly the header token,count and one row per distinct token. Use positive integer counts and
     ascending alphabetical token order. Keep source.txt unchanged.
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_histogram.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_histogram.py'
   requires:
   - pytest
   protect:
@@ -58,7 +58,7 @@ tasks:
     written as <count>x <line>, for example 3x WARN disk 91%. A line that is not part of such a run stays
     exactly as it is, and identical lines separated by a different line are separate runs. Keep the original
     order. Create compressed.log with one line per run and a final newline. Keep events.log unchanged.
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_compress.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_compress.py'
   requires:
   - pytest
   protect:
@@ -79,7 +79,7 @@ tasks:
     than alphanumeric ones, which compare in ASCII order, and a shorter list is lower when all earlier
     identifiers are equal. Build metadata after + is ignored when comparing, so versions that differ only
     in build metadata keep their input order. Keep versions.txt unchanged.'
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_semver.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_semver.py'
   requires:
   - pytest
   protect:
@@ -99,7 +99,7 @@ tasks:
     and one row per region that has at least one paid order, giving the number of paid orders and the
     sum of amount_cents as integers. Sort rows by total_cents descending, then by region name ascending.
     Keep both inputs unchanged.
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_totals.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_totals.py'
   requires:
   - pytest
   protect:
@@ -120,7 +120,7 @@ tasks:
     their shortest decimal form, booleans as true or false and null as null. An empty object is a leaf
     with the value {} and an empty list a leaf with the value []. Sort the lines by their complete text
     in plain ascending character order. Keep config.json unchanged.
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_flatten.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_flatten.py'
   requires:
   - pytest
   protect:
@@ -142,7 +142,7 @@ tasks:
     so the final balance is exactly 0.00, which makes the final payment differ slightly from the level
     payment. Create schedule.csv with the header month,payment,interest,principal,balance and one row
     per month, every amount with exactly two decimals. Keep loan.txt unchanged.
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_schedule.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_schedule.py'
   requires:
   - pytest
   protect:
@@ -151,6 +151,7 @@ tasks:
   hidden:
   - test_schedule.py
   tags:
+  - overlaps-engine-suite
   - original
   - finance
   - decimal
@@ -161,7 +162,7 @@ tasks:
     Create gains.csv with the header date,symbol,qty,proceeds,cost,gain and one row per SELL in input
     order, where proceeds is qty times the sale price, cost is the total purchase price of the matched
     quantity, and gain is proceeds minus cost, each with exactly two decimals. Keep trades.csv unchanged.
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_gains.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_gains.py'
   requires:
   - pytest
   protect:
@@ -170,6 +171,7 @@ tasks:
   hidden:
   - test_gains.py
   tags:
+  - overlaps-engine-suite
   - original
   - finance
   - decimal
@@ -182,7 +184,7 @@ tasks:
     (the dates of the peak close and of the lowest close after it that define that largest fall; use the
     earliest dates on ties) and recovery_date (the first date after the trough on which the close is back
     at or above the peak close, or null if it never is). Keep prices.csv unchanged.'
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_drawdown.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_drawdown.py'
   requires:
   - pytest
   protect:
@@ -191,6 +193,7 @@ tasks:
   hidden:
   - test_drawdown.py
   tags:
+  - overlaps-engine-suite
   - original
   - finance
   - analysis
@@ -202,7 +205,7 @@ tasks:
     to exactly 100.00. Allocate by the largest remainder method in units of 0.01 percent: give every symbol
     the floor of its exact share, then hand out the leftover units one each to the symbols with the largest
     fractional remainders, breaking ties in favour of the symbol that sorts first. Keep holdings.csv unchanged.'
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_weights.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_weights.py'
   requires:
   - pytest
   protect:
@@ -211,6 +214,7 @@ tasks:
   hidden:
   - test_weights.py
   tags:
+  - overlaps-engine-suite
   - original
   - finance
   - decimal
@@ -223,7 +227,7 @@ tasks:
     schedule.csv with the exact header id,door,start,end,wait_min and one row per truck, with times as
     HH:MM and wait_min as the minutes between arrival and start. Sort rows by start time, then by id.
     Keep appointments.csv unchanged.
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_dock.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_dock.py'
   requires:
   - pytest
   protect:
@@ -232,6 +236,7 @@ tasks:
   hidden:
   - test_dock.py
   tags:
+  - overlaps-engine-suite
   - original
   - logistics
   - scheduling
@@ -245,7 +250,7 @@ tasks:
     weight times that price, rounded half up to cents. Create charges.csv with the header id,billable_kg,charge
     and one row per parcel in input order, billable_kg with one decimal and charge with two. Keep both
     inputs unchanged.
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_charges.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_charges.py'
   requires:
   - pytest
   protect:
@@ -255,6 +260,7 @@ tasks:
   hidden:
   - test_charges.py
   tags:
+  - overlaps-engine-suite
   - original
   - logistics
   - decimal
@@ -266,7 +272,7 @@ tasks:
     once for all orders together, adding up its quantities. Create picklist.csv with the exact header
     seq,sku,aisle,bay,total_qty and one row per distinct sku in walking order, with seq counting from
     1. Keep both inputs unchanged.'
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_picks.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_picks.py'
   requires:
   - pytest
   protect:
@@ -276,6 +282,7 @@ tasks:
   hidden:
   - test_picks.py
   tags:
+  - overlaps-engine-suite
   - original
   - logistics
   - planning
@@ -287,7 +294,7 @@ tasks:
     it, in whole cases only: (max_stock - position) rounded down to a multiple of case_size. Skip skus
     that need no reorder and skus whose order quantity would be 0. Create reorder.csv with the exact header
     sku,order_qty and the remaining skus sorted by sku. Keep stock.csv unchanged.'
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_reorder.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_reorder.py'
   requires:
   - pytest
   protect:
@@ -296,6 +303,7 @@ tasks:
   hidden:
   - test_reorder.py
   tags:
+  - overlaps-engine-suite
   - original
   - logistics
   - planning
@@ -308,7 +316,7 @@ tasks:
     the oldest byte into *out and returns true, or returns false without writing *out when the buffer
     is empty. rb_count returns how many bytes are held, and rb_init empties the buffer. It must keep working
     for any number of operations as the indices wrap around. Keep ringbuf.h unchanged.'
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_ringbuf.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_ringbuf.py'
   requires: &id001
   - pytest
   protect:
@@ -317,6 +325,7 @@ tasks:
   hidden:
   - test_ringbuf.py
   tags:
+  - requires-c-compiler
   - original
   - physical-ai
   - firmware
@@ -331,7 +340,7 @@ tasks:
     error so a setpoint step causes no kick, and it is 0 on the first update after pid_init; then the
     previous measurement is stored. The returned output is kp * error + integral term + derivative term,
     clamped to [out_min, out_max]. dt may change between calls. Keep pid.h unchanged.'
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_pid.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_pid.py'
   requires: *id001
   protect:
   - pid.h
@@ -339,6 +348,7 @@ tasks:
   hidden:
   - test_pid.py
   tags:
+  - requires-c-compiler
   - original
   - physical-ai
   - firmware
@@ -352,7 +362,7 @@ tasks:
     data, len) continues a CRC from the value crc over len more bytes, so splitting a message into pieces
     gives the same result as processing it at once, and crc16_ccitt_false(data, len) is crc16_update(0xFFFF,
     data, len). Keep crc16.h unchanged.'
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_crc16.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_crc16.py'
   requires: *id001
   protect:
   - crc16.h
@@ -360,6 +370,7 @@ tasks:
   hidden:
   - test_crc16.py
   tags:
+  - requires-c-compiler
   - original
   - physical-ai
   - firmware
@@ -374,7 +385,7 @@ tasks:
     consecutive samples that all differ from the stable state; any sample equal to the stable state cancels
     the run, so bounces never accumulate across interruptions. After a change, counting starts again from
     zero. Keep debounce.h unchanged.
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_debounce.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_debounce.py'
   requires: *id001
   protect:
   - debounce.h
@@ -382,6 +393,7 @@ tasks:
   hidden:
   - test_debounce.py
   tags:
+  - requires-c-compiler
   - original
   - physical-ai
   - firmware
@@ -395,7 +407,7 @@ tasks:
     the exact product of the two raw values in at least 32 bits, adds 16384 and shifts right by 15 (rounding
     half up, arithmetic shift), then saturates, so q15_mul(-32768, -32768) is 32767. q15_from_double(x)
     rounds x * 32768 to the nearest integer with ties away from zero, then saturates. Keep q15.h unchanged.
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_q15.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_q15.py'
   requires: *id001
   protect:
   - q15.h
@@ -403,6 +415,7 @@ tasks:
   hidden:
   - test_q15.py
   tags:
+  - requires-c-compiler
   - original
   - physical-ai
   - firmware
@@ -422,7 +435,7 @@ tasks:
     t is the simulated time in seconds. The grader calls it before every simulation step at the model's
     timestep, and the model clamps each command to its control range. Use only the arguments and the files
     here, and keep pendulum.xml unchanged.
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_control.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_control.py'
   requires: &id002
   - pytest
   - mujoco
@@ -450,7 +463,7 @@ tasks:
     time in seconds. The grader calls it before every simulation step at the model's timestep, and the
     model clamps each command to its control range. Use only the arguments and the files here, and keep
     cartpole.xml unchanged.
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_control.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_control.py'
   requires: *id002
   protect:
   - cartpole.xml
@@ -475,7 +488,7 @@ tasks:
     model's joint order, and t is the simulated time in seconds. The grader calls it before every simulation
     step at the model's timestep, and the model clamps each command to its control range. Use only the
     arguments and the files here, and keep arm.xml, target.json unchanged.
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_control.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_control.py'
   requires: *id002
   protect:
   - arm.xml
@@ -500,7 +513,7 @@ tasks:
     model's joint order, and t is the simulated time in seconds. The grader calls it before every simulation
     step at the model's timestep, and the model clamps each command to its control range. Use only the
     arguments and the files here, and keep carriage.xml unchanged.
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_control.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_control.py'
   requires: *id002
   protect:
   - carriage.xml
@@ -527,7 +540,7 @@ tasks:
     the simulated time in seconds. The grader calls it before every simulation step at the model''s timestep,
     and the model clamps each command to its control range. Use only the arguments and the files here,
     and keep arm.xml, targets.json unchanged.'
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_control.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_control.py'
   requires: *id002
   protect:
   - arm.xml
@@ -549,7 +562,7 @@ tasks:
     (triangles, 1-based indices). It must be a closed solid: every edge shared by exactly two triangles,
     neighbouring triangles wound consistently, and every triangle counter-clockwise when seen from outside,
     so the normals point outward. Keep spec.json unchanged.'
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_mesh.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_mesh.py'
   requires: &id003
   - pytest
   - trimesh
@@ -574,7 +587,7 @@ tasks:
     Wavefront OBJ text file with v and f lines (triangles, 1-based indices). It must be a closed solid:
     every edge shared by exactly two triangles, neighbouring triangles wound consistently, and every triangle
     counter-clockwise when seen from outside, so the normals point outward. Keep spec.json unchanged.'
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_mesh.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_mesh.py'
   requires: *id003
   protect:
   - spec.json
@@ -594,7 +607,7 @@ tasks:
     OBJ text file with v and f lines (triangles, 1-based indices). It must be a closed solid: every edge
     shared by exactly two triangles, neighbouring triangles wound consistently, and every triangle counter-clockwise
     when seen from outside, so the normals point outward. Keep points.csv unchanged.'
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_mesh.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_mesh.py'
   requires: *id003
   protect:
   - points.csv
@@ -616,7 +629,7 @@ tasks:
     It must be a closed solid: every edge shared by exactly two triangles, neighbouring triangles wound
     consistently, and every triangle counter-clockwise when seen from outside, so the normals point outward.
     Keep bracket_in.obj unchanged.'
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_mesh.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_mesh.py'
   requires: *id003
   protect:
   - bracket_in.obj
@@ -638,7 +651,7 @@ tasks:
     1-based indices). It must be a closed solid: every edge shared by exactly two triangles, neighbouring
     triangles wound consistently, and every triangle counter-clockwise when seen from outside, so the
     normals point outward. Keep broken.obj unchanged.'
-  verify: '{python} -m pytest -q --noconftest -p no:cacheprovider test_mesh.py'
+  verify: '{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null test_mesh.py'
   requires: *id003
   protect:
   - broken.obj

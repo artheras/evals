@@ -126,7 +126,10 @@ def execute(root: Path, args) -> int:
         raise ValueError("Catalog content changed during execution")
     summary = publication_summary(native, manifest, prices)
     write_json(output / "summary.json", summary)
-    print(json.dumps({"run_kind": manifest["run_kind"], "counts": summary["counts"],
+    performance = summary["performance"] or {}
+    print(json.dumps({"run_kind": manifest["run_kind"],
+                      **({"completion_rate_all_trials": performance["completion_rate_all_trials"]} if performance else {}),
+                      "counts": summary["counts"], "errors": summary["errors"],
                       "summary": str(output / "summary.json"), "exit_code": result.returncode}))
     if check and summary["counts"] != {"pass": 0, "fail": catalog["task_count"], "invalid": 0, "error": 0}:
         return 1

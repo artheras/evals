@@ -44,6 +44,11 @@ def test_input_change_changes_catalog_identity(catalog):
     ("fixture", "../outside"), ("fixture", "/tmp/absolute"),
     ("typo_field", True), ("setup", ["echo arbitrary"]),
     ("verify", "{python} -m pytest -q test_route.py; echo bypass"),
+    ("verify", "{python} -m pytest -q --noconftest -p no:cacheprovider test_route.py"),
+    ("verify", "{python} -I -m pytest -q --noconftest -p no:cacheprovider test_route.py"),
+    ("verify", "{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib "
+               "-c /dev/null --collect-only test_route.py"),
+    ("verify", "{python} -I -m pytest -q --noconftest -p no:cacheprovider --import-mode=importlib -c /dev/null"),
     ("hidden", []), ("protect", []), ("allow_green_start", True),
     ("timeout", -1), ("timeout", True),
 ])
@@ -79,3 +84,15 @@ def test_engine_branch_is_not_an_immutable_pin(catalog):
     path.write_text(json.dumps(manifest))
     with pytest.raises(ValueError):
         validate_catalog(catalog)
+
+
+def test_tasks_resembling_engine_suite_tasks_are_tagged():
+    # Aria Code's own suites hold close relatives of these (drawdown_running_peak, fifo_cost_basis,
+    # dock_windows, dim_weight_billing, inventory_reorder, fefo_picking, loan_amortization,
+    # allocate_cents); see docs/collaboration.md.
+    tasks = yaml.safe_load((ROOT / "evals/suites/public.yaml").read_text())["tasks"]
+    tagged = {task["fixture"] for task in tasks if "overlaps-engine-suite" in task["tags"]}
+    assert tagged == {"max_drawdown", "fifo_gains", "dock_schedule", "billable_weight", "reorder_plan",
+                      "pick_sequence", "amortization", "largest_remainder"}
+    compiled = {task["fixture"] for task in tasks if "requires-c-compiler" in task["tags"]}
+    assert compiled == {task["fixture"] for task in tasks if task["fixture"].startswith("fw_")}

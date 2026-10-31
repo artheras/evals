@@ -5,7 +5,10 @@ name: Model evaluation
 # nothing triggers it automatically.
 #
 # Keys come from repository secrets and reach the engine only as environment
-# variables. A missing key fails the run before any task starts.
+# variables. Only the selected provider's key is ever placed in a step's
+# environment: the agent runs shell commands without permission prompts and
+# inherits that environment, so a key it does not need must not be there.
+# A missing key fails the run before any task starts.
 on:
   workflow_dispatch:
     inputs:
@@ -46,35 +49,43 @@ jobs:
       - name: The selected provider has a key
         env:
           PROVIDER: ${{ inputs.provider }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Each branch is guarded by the provider, so this is the selected key or empty.
+          SELECTED_KEY: ${{ (inputs.provider == 'openai' && secrets.OPENAI_API_KEY)
+            || (inputs.provider == 'deepseek' && secrets.DEEPSEEK_API_KEY)
+            || (inputs.provider == 'google' && secrets.GOOGLE_API_KEY)
+            || (inputs.provider == 'anthropic' && secrets.ANTHROPIC_API_KEY) || '' }}
         run: |
-          case "$PROVIDER" in
-            openai) key="$OPENAI_API_KEY" ;; deepseek) key="$DEEPSEEK_API_KEY" ;;
-            google) key="$GOOGLE_API_KEY" ;; anthropic) key="$ANTHROPIC_API_KEY" ;;
-          esac
-          if [ -z "$key" ]; then
+          if [ -z "$SELECTED_KEY" ]; then
             echo "::error::Add the ${PROVIDER} API key as a repository secret before running this workflow."
             exit 1
           fi
       - run: aria-evals check --output runs/preflight
       - name: Run the suite
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SELECTED_KEY: ${{ (inputs.provider == 'openai' && secrets.OPENAI_API_KEY)
+            || (inputs.provider == 'deepseek' && secrets.DEEPSEEK_API_KEY)
+            || (inputs.provider == 'google' && secrets.GOOGLE_API_KEY)
+            || (inputs.provider == 'anthropic' && secrets.ANTHROPIC_API_KEY) || '' }}
           PROVIDER: ${{ inputs.provider }}
           MODEL: ${{ inputs.model }}
           REPEAT: ${{ inputs.repeat }}
         run: |
+          # Export the one key under the name the engine reads, then drop the generic copy.
+          case "$PROVIDER" in
+            openai) export OPENAI_API_KEY="$SELECTED_KEY" ;;
+            deepseek) export DEEPSEEK_API_KEY="$SELECTED_KEY" ;;
+            google) export GOOGLE_API_KEY="$SELECTED_KEY" ;;
+            anthropic) export ANTHROPIC_API_KEY="$SELECTED_KEY" ;;
+            *) echo "::error::Unknown provider ${PROVIDER}"; exit 1 ;;
+          esac
+          unset SELECTED_KEY
           prices=()
           if [ -f "prices/${PROVIDER}.json" ]; then prices=(--prices "prices/${PROVIDER}.json"); fi
           aria-evals run --provider "$PROVIDER" --model "$MODEL" --repeat "$REPEAT" \
             --solve-timeout 900 --output runs/model "${prices[@]}" || status=$?
-          cat runs/model/summary.json >> "$GITHUB_STEP_SUMMARY" || true
+          if [ -f runs/model/summary.json ]; then
+            { echo '```json'; cat runs/model/summary.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          fi
           exit "${status:-0}"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()

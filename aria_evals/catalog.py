@@ -11,6 +11,15 @@ import yaml
 TASK_FIELDS = {"id", "prompt", "verify", "fixture", "timeout", "solve_timeout", "tags",
                "setup", "requires", "protect", "allow_green_start", "hidden"}
 
+# The grader runs in the agent's workspace, so nothing the agent leaves there may reach the
+# grader's interpreter: -I keeps the current directory and PYTHON* variables off sys.path
+# (a planted pytest.py or sitecustomize.py is never imported), importlib mode stops pytest
+# from inserting the workspace into sys.path (a planted numpy.py or mujoco.py would shadow
+# the real one), -c /dev/null ignores any pytest.ini, pyproject.toml, tox.ini or setup.cfg
+# found there (addopts = --collect-only would exit 0), and --noconftest ignores conftest.py.
+VERIFY_PREFIX = ["{python}", "-I", "-m", "pytest", "-q", "--noconftest", "-p", "no:cacheprovider",
+                 "--import-mode=importlib", "-c", "/dev/null"]
+
 
 def inside(root: Path, value: str) -> Path:
     if not isinstance(value, str) or not value or "\\" in value:
@@ -75,10 +84,10 @@ def validate_catalog(root: Path) -> dict:
         if not graders or set(task.get("hidden", [])) != graders:
             raise ValueError("All grader files must be hidden during the agent's turn")
         words = shlex.split(task.get("verify", ""))
-        if words[:3] != ["{python}", "-m", "pytest"]:
-            raise ValueError("Verifier must invoke pytest through the selected interpreter")
-        selected = {word for word in words[3:] if word.endswith(".py")}
-        if selected != graders or any(word not in graders | {"-q", "--noconftest", "-p", "no:cacheprovider"} for word in words[3:]):
+        if words[:len(VERIFY_PREFIX)] != VERIFY_PREFIX:
+            raise ValueError("Verifier must run the isolated pytest command through the selected interpreter")
+        selected = words[len(VERIFY_PREFIX):]
+        if not selected or len(set(selected)) != len(selected) or set(selected) != graders:
             raise ValueError("Verifier must select only its fixture graders")
         if not {p.name for p in files}.issubset(set(task.get("protect", []))):
             raise ValueError("Protect each input and grader explicitly")

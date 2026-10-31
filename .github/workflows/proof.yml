@@ -1,7 +1,9 @@
 name: Proof
 
 on:
+  # Pull requests are checked as pull requests; pushes only once they land on main.
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -11,7 +13,7 @@ permissions:
 jobs:
   calibration:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     strategy:
       matrix:
         python-version: ['3.12', '3.13']
