@@ -5,8 +5,8 @@
   "fixtures": "evals/fixtures",
   "engine": {
     "repository": "artheras/aria-code",
-    "commit": "1138706ec418284ff87ea3219eb8911f29cea57b",
-    "distribution_version": "0.163.0"
+    "commit": "e5d4d4be2a5e0a07d46091ace5363e74aba05c58",
+    "distribution_version": "0.165.0"
   },
   "dataset_role": "public_demonstration"
 }
