@@ -80,6 +80,10 @@ aria-evals diff runs/baseline runs/model
 
 可通过 **Actions → Model evaluation → Run workflow** 在 GitHub Runner 上手动触发模型评测（需先配置对应的 Repository Secret：`OPENAI_API_KEY`、`DEEPSEEK_API_KEY`、`GOOGLE_API_KEY` 或 `ANTHROPIC_API_KEY`）。`Proof` 工作流会在 PR 和 `main` 分支推送时自动运行离线校准与引擎预检，不消耗模型额度。
 
+## 评测结果与基线归档
+
+聚合评测记录与披露规范见 [`results/`](results/README.md)，其中已收录上游基准参考 [Aria Code Evals #14](results/aria-code-evals-14.md)（`google/gemini-3.5-flash`，`repeat=1`，含优势拆解与已知短板说明）。
+
 ## 许可协议
 
 本仓库原创文件采用 [Apache License 2.0](LICENSE) 协议开源（历史 MIT 说明见 [NOTICE](NOTICE)）。Aria Code 作为独立依赖遵循其自身协议。

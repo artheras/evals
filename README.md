@@ -102,6 +102,10 @@ Aria Code owns the agent and evaluation engine. This repository owns public task
 
 The `Proof` workflow runs on pull requests and on pushes to `main`. It performs offline checks without model credentials, including positive reference controls with the official engine's graders hidden during the solver's turn, and the planted-file and hostile-controller checks; none of it makes model calls. The separate `Model evaluation` workflow is started by hand only, uses the selected provider's API key secret and nothing else, and spends provider credit. Cross-repository model evaluation and private-result publication are future integration work.
 
+## Results and baselines
+
+See [`results/`](results/README.md) for aggregate benchmark records and reporting standards, including the upstream reference summary for [Aria Code Evals #14](results/aria-code-evals-14.md) (`google/gemini-3.5-flash`, `repeat=1`).
+
 ## License
 
 The original files in this repository are [Apache License 2.0 licensed](LICENSE) (see [NOTICE](NOTICE) for the earlier MIT history). Aria Code is a separate dependency governed by its own license.
