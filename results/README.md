@@ -10,6 +10,7 @@ This directory stores **aggregate** evaluation records and reproducible baseline
 
 | Model | Repeat | All Trials | No Overlap | Scored Only | Pass / Fail / Err (Timeout) | Cost (USD) | Engine | Catalog |
 |---|---:|---:|---:|---:|---|---:|---|---|
+| `deepseek/deepseek-flash` | 1 | 76.7% | 72.7% | 92.0% | 23 / 2 / 5 (0) | - | `e5d4d4b` | `d44056f` |
 | `ollama/qwen2.5:7b` | 1 | 0.0% | 0.0% | 0.0% | 0 / 28 / 2 (1) | - | `e5d4d4b` | `d44056f` |
 
    - Compare any two runs or render a Markdown/JSON leaderboard table across multiple archived summaries:

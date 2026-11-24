@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "context": {
+    "schema_version": 1,
+    "run_kind": "model_evaluation",
+    "catalog_version": "0.4.0",
+    "catalog_commit": "a2b1cc0425b57439a211df2c12d33f0d9dee411c",
+    "catalog_sha256": "d44056f348d0efd3ca7bcf5a90df954dfb25b8232a6fd744534517b3de426351",
+    "catalog_dirty": false,
+    "engine_commit": "e5d4d4be2a5e0a07d46091ace5363e74aba05c58",
+    "engine_version": "0.165.0",
+    "model": "deepseek/deepseek-flash",
+    "provider": "deepseek",
+    "repeat": 1,
+    "solve_timeout_seconds": 900
+  },
+  "trials": 30,
+  "counts": {
+    "pass": 23,
+    "fail": 2,
+    "invalid": 0,
+    "error": 5
+  },
+  "errors": {
+    "timed_out": 0,
+    "other": 5
+  },
+  "duration_seconds": 731.34,
+  "performance": {
+    "completion_rate_all_trials": 0.7666666666666667,
+    "unscored_trials": {
+      "timed_out": 0,
+      "other_error": 5,
+      "invalid": 0
+    },
+    "scored_trials": 25,
+    "native_pass_rate_scored_only": 0.92,
+    "without_engine_suite_overlap": {
+      "trials": 22,
+      "completion_rate_all_trials": 0.7272727272727273
+    }
+  },
+  "usage": null,
+  "cost_usd": null,
+  "cost_usd_partial": null,
+  "cost_basis": null,
+  "limitations": "Small public demonstration suite; prior exposure is possible. Unavailable usage is null; usage covers only the trials that reported usage, and cost_usd is null unless every trial did (cost_usd_partial then prices the trials that reported)."
+}
