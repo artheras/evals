@@ -45,6 +45,15 @@ python -m pytest -q tests
 
 The grader calibration tests cover missing answers, correct reference answers, incorrect answers, input tampering, output symlinks, files planted in the workspace, and controllers that exit early or patch the grader. Reference solvers are public test utilities, not model-generated solutions.
 
+To run validation and calibration in a reproducible POSIX container (with Python 3.12, `gcc`, `mujoco`, and `trimesh`):
+
+```bash
+docker build -t aria-evals .
+docker run --rm aria-evals
+```
+
+Pass `--build-arg INSTALL_RUNNER=1` to include the pinned engine in the image.
+
 To exercise the official Aria evaluation engine without a model call:
 
 ```bash

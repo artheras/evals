@@ -227,6 +227,71 @@ def diff_summaries(left: dict, right: dict) -> dict:
     }
 
 
+def _pct(value) -> str:
+    if type(value) not in {int, float} or isinstance(value, bool):
+        return "-"
+    return f"{value * 100:.1f}%"
+
+
+def leaderboard_rows(summaries: list[dict]) -> list[dict]:
+    """Extract normalized leaderboard rows from model_evaluation summaries."""
+    rows = []
+    for summary in summaries:
+        if not isinstance(summary, dict) or summary.get("schema_version") != 1:
+            raise ValueError("Unsupported summary schema")
+        ctx = summary.get("context") or {}
+        if ctx.get("run_kind") != "model_evaluation":
+            continue
+        perf = summary.get("performance") or {}
+        no_overlap = perf.get("without_engine_suite_overlap") or {}
+        counts = summary.get("counts") or {}
+        errors = summary.get("errors") or {}
+        rows.append({
+            "model": ctx.get("model") or "-",
+            "provider": ctx.get("provider") or "-",
+            "repeat": ctx.get("repeat"),
+            "completion_rate_all_trials": perf.get("completion_rate_all_trials"),
+            "without_engine_suite_overlap": no_overlap.get("completion_rate_all_trials"),
+            "native_pass_rate_scored_only": perf.get("native_pass_rate_scored_only"),
+            "pass": counts.get("pass", 0),
+            "fail": counts.get("fail", 0),
+            "error": counts.get("error", 0),
+            "timed_out": errors.get("timed_out", 0),
+            "cost_usd": summary.get("cost_usd"),
+            "engine_commit": (ctx.get("engine_commit") or "")[:7] or "-",
+            "catalog_sha256": (ctx.get("catalog_sha256") or "")[:7] or "-",
+        })
+    rows.sort(
+        key=lambda row: (
+            row["completion_rate_all_trials"] if row["completion_rate_all_trials"] is not None else -1.0,
+            row["without_engine_suite_overlap"] if row["without_engine_suite_overlap"] is not None else -1.0,
+        ),
+        reverse=True,
+    )
+    return rows
+
+
+def render_leaderboard(summaries: list[dict]) -> str:
+    """Render a Markdown comparison table from model evaluation summaries."""
+    rows = leaderboard_rows(summaries)
+    if not rows:
+        raise ValueError("No model_evaluation summaries found")
+    lines = [
+        "| Model | Repeat | All Trials | No Overlap | Scored Only | Pass / Fail / Err (Timeout) | Cost (USD) | Engine | Catalog |",
+        "|---|---:|---:|---:|---:|---|---:|---|---|",
+    ]
+    for row in rows:
+        cost = f"${row['cost_usd']:.4f}" if type(row["cost_usd"]) in {int, float} else "-"
+        repeat = str(row["repeat"]) if row["repeat"] is not None else "-"
+        outcomes = f"{row['pass']} / {row['fail']} / {row['error']} ({row['timed_out']})"
+        lines.append(
+            f"| `{row['model']}` | {repeat} | {_pct(row['completion_rate_all_trials'])} | "
+            f"{_pct(row['without_engine_suite_overlap'])} | {_pct(row['native_pass_rate_scored_only'])} | "
+            f"{outcomes} | {cost} | `{row['engine_commit']}` | `{row['catalog_sha256']}` |"
+        )
+    return "\n".join(lines)
+
+
 def write_json(path: Path, value: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("x", encoding="utf-8") as stream:

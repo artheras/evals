@@ -169,3 +169,33 @@ def test_diff_command_compares_run_directories(tmp_path, capsys):
     assert diff["counts_delta"]["pass"] == 5
     assert diff["counts_delta"]["fail"] == -5
     assert diff["cost_usd_delta"] == 0.25
+
+
+def test_leaderboard_command_reads_directory_json(tmp_path, capsys):
+    results_dir = tmp_path / "results"
+    results_dir.mkdir()
+    summary = {
+        "schema_version": 1,
+        "context": {
+            "run_kind": "model_evaluation",
+            "model": "google/gemini-3.5-flash",
+            "provider": "google",
+            "repeat": 3,
+            "engine_commit": "e5d4d4be2a5e0a07d46091ace5363e74aba05c58",
+            "catalog_sha256": "d44056f348d0efd3ca7bcf5a90df954dfb25b8232a6fd744534517b3de426351",
+        },
+        "counts": {"pass": 27, "fail": 3, "invalid": 0, "error": 0},
+        "errors": {"timed_out": 0, "other": 0},
+        "performance": {
+            "completion_rate_all_trials": 0.9,
+            "native_pass_rate_scored_only": 0.9,
+            "without_engine_suite_overlap": {"trials": 22, "completion_rate_all_trials": 0.863636},
+        },
+        "cost_usd": 0.42,
+    }
+    (results_dir / "gemini.json").write_text(json.dumps(summary))
+    assert cli.main(["leaderboard", str(results_dir), "--format", "json"]) == 0
+    rows = json.loads(capsys.readouterr().out)
+    assert len(rows) == 1
+    assert rows[0]["model"] == "google/gemini-3.5-flash"
+    assert rows[0]["completion_rate_all_trials"] == 0.9

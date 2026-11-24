@@ -48,6 +48,15 @@ aria-evals validate
 python -m pytest -q tests
 ```
 
+如需在标准 POSIX 容器中一键复现环境校验与校准测试（内置 Python 3.12、`gcc`、`mujoco`、`trimesh`）：
+
+```bash
+docker build -t aria-evals .
+docker run --rm aria-evals
+```
+
+构建时传入 `--build-arg INSTALL_RUNNER=1` 即可同时安装 pinned 引擎。
+
 使用官方 pinned 引擎执行无模型调用的预检（preflight）：
 
 ```bash

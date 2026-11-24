@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from aria_evals.reporting import diff_summaries, load_prices, publication_summary, write_json
+from aria_evals.reporting import diff_summaries, load_prices, publication_summary, render_leaderboard, write_json
 
 
 def native(*outcomes):
@@ -105,3 +105,39 @@ def test_price_template_is_valid_and_diff_flags_incompatibility():
     diff = diff_summaries(left, right)
     assert diff["compatible"] is False
     assert "Catalog content digest differs" in diff["compatibility_warnings"]
+
+
+def test_render_leaderboard_sorts_by_completion_rate_and_skips_preflight():
+    preflight = {
+        "schema_version": 1,
+        "context": {"run_kind": "model_free_preflight"},
+        "counts": {"pass": 0, "fail": 30, "invalid": 0, "error": 0},
+    }
+    low = {
+        "schema_version": 1,
+        "context": {
+            "run_kind": "model_evaluation",
+            "model": "openai/low",
+            "provider": "openai",
+            "repeat": 3,
+            "engine_commit": "abcdef1234567",
+            "catalog_sha256": "1234567890abc",
+        },
+        "counts": {"pass": 15, "fail": 15, "invalid": 0, "error": 0},
+        "errors": {"timed_out": 0, "other": 0},
+        "performance": {
+            "completion_rate_all_trials": 0.5,
+            "native_pass_rate_scored_only": 0.5,
+            "without_engine_suite_overlap": {"trials": 22, "completion_rate_all_trials": 0.4},
+        },
+        "cost_usd": 0.25,
+    }
+    high = json.loads(json.dumps(low))
+    high["context"]["model"] = "google/high"
+    high["performance"]["completion_rate_all_trials"] = 0.9
+    table = render_leaderboard([preflight, low, high])
+    lines = table.splitlines()
+    assert len(lines) == 4
+    assert "`google/high`" in lines[2]
+    assert "`openai/low`" in lines[3]
+    assert "$0.2500" in lines[2]

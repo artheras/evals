@@ -17,7 +17,7 @@ import uuid
 import yaml
 
 from .catalog import validate_catalog
-from .reporting import diff_summaries, load_prices, publication_summary, write_json
+from .reporting import diff_summaries, leaderboard_rows, load_prices, publication_summary, render_leaderboard, write_json
 
 
 def provider_contract():
@@ -141,6 +141,22 @@ def _load_summary_arg(path_str: str) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _collect_summaries(paths: list[str]) -> list[dict]:
+    summaries = []
+    for raw in paths:
+        path = Path(raw).expanduser().resolve()
+        if path.is_dir():
+            summary_file = path / "summary.json"
+            if summary_file.is_file():
+                summaries.append(json.loads(summary_file.read_text(encoding="utf-8")))
+            else:
+                for item in sorted(path.glob("*.json")):
+                    summaries.append(json.loads(item.read_text(encoding="utf-8")))
+        else:
+            summaries.append(json.loads(path.read_text(encoding="utf-8")))
+    return summaries
+
+
 def execute(root: Path, args) -> int:
     catalog = validate_catalog(root)
     check_environment(catalog)
@@ -214,6 +230,9 @@ def build_parser() -> argparse.ArgumentParser:
     diff = commands.add_parser("diff", help="compare two summary.json files or run directories")
     diff.add_argument("left", help="baseline summary.json or run directory")
     diff.add_argument("right", help="comparison summary.json or run directory")
+    board = commands.add_parser("leaderboard", help="render a comparison table from summary.json files or directories")
+    board.add_argument("paths", nargs="+", help="summary.json files, run directories, or a results directory")
+    board.add_argument("--format", choices=("markdown", "json"), default="markdown")
     check = commands.add_parser("check", help="model-free native preflight; every task must fail its grader")
     check.add_argument("--output", help="new directory for local reports (default: ignored runs/)")
     run = commands.add_parser("run", help="run the real Aria agent on public demonstrations")
@@ -242,6 +261,13 @@ def main(argv=None) -> int:
         if args.command == "diff":
             result = diff_summaries(_load_summary_arg(args.left), _load_summary_arg(args.right))
             print(json.dumps(result, ensure_ascii=False, indent=2))
+            return 0
+        if args.command == "leaderboard":
+            summaries = _collect_summaries(args.paths)
+            if args.format == "json":
+                print(json.dumps(leaderboard_rows(summaries), ensure_ascii=False, indent=2))
+            else:
+                print(render_leaderboard(summaries))
             return 0
         if args.command == "run" and any(not value.strip() or "\n" in value or "\r" in value
                                           for value in (args.model, args.provider)):
