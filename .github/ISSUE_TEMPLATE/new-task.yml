@@ -1,0 +1,42 @@
+name: New Public Task Proposal
+description: Propose an original synthetic evaluation task for the public catalog
+title: "[Task]: "
+labels: ["enhancement", "task-proposal"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Public tasks must be original synthetic material (Apache-2.0 compatible) and must not overlap with private holdout tasks.
+  - type: dropdown
+    id: group
+    attributes:
+      label: Task Group
+      options:
+        - Coding, finance, logistics
+        - Firmware (C99)
+        - Control (MuJoCo)
+        - 3D (OBJ mesh)
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Task Goal & Inputs
+      description: Describe the prompt, flat fixture inputs, and expected output artifact.
+    validations:
+      required: true
+  - type: textarea
+    id: grading
+    attributes:
+      label: Deterministic Grading & Calibration
+      description: Explain how the hidden pytest grader verifies correctness and what failure modes negative calibration tests cover.
+    validations:
+      required: true
+  - type: checkboxes
+    id: provenance
+    attributes:
+      label: Provenance
+      options:
+        - label: This task is original synthetic material with no private holdout overlap.
+          required: true

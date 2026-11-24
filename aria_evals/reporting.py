@@ -135,6 +135,98 @@ def publication_summary(native: dict, manifest: dict, prices=None) -> dict:
                             "every trial did (cost_usd_partial then prices the trials that reported).")}
 
 
+def _delta_number(left, right, *, ndigits: int = 6):
+    if type(left) not in {int, float} or type(right) not in {int, float}:
+        return None
+    if isinstance(left, bool) or isinstance(right, bool):
+        return None
+    value = right - left
+    return value if isinstance(left, int) and isinstance(right, int) else round(value, ndigits)
+
+
+def diff_summaries(left: dict, right: dict) -> dict:
+    """Compare two publication summaries and flag compatibility differences."""
+    for label, summary in (("left", left), ("right", right)):
+        if not isinstance(summary, dict) or summary.get("schema_version") != 1:
+            raise ValueError(f"Unsupported {label} summary schema")
+        if not isinstance(summary.get("context"), dict) or not isinstance(summary.get("counts"), dict):
+            raise ValueError(f"Invalid {label} summary structure")
+
+    left_ctx = left["context"]
+    right_ctx = right["context"]
+    warnings = []
+    for key, message in (
+        ("catalog_sha256", "Catalog content digest differs"),
+        ("engine_commit", "Engine commit differs"),
+        ("run_kind", "Run kind differs"),
+        ("repeat", "Repeat count differs"),
+        ("solve_timeout_seconds", "Solve timeout differs"),
+    ):
+        if left_ctx.get(key) != right_ctx.get(key):
+            warnings.append(message)
+
+    counts_delta = {
+        outcome: _delta_number(left["counts"].get(outcome), right["counts"].get(outcome))
+        for outcome in ("pass", "fail", "invalid", "error")
+    }
+
+    left_perf = left.get("performance") or {}
+    right_perf = right.get("performance") or {}
+    left_no_overlap = left_perf.get("without_engine_suite_overlap") or {}
+    right_no_overlap = right_perf.get("without_engine_suite_overlap") or {}
+    performance_delta = None
+    if left_perf and right_perf:
+        performance_delta = {
+            "completion_rate_all_trials": _delta_number(
+                left_perf.get("completion_rate_all_trials"),
+                right_perf.get("completion_rate_all_trials"),
+            ),
+            "without_engine_suite_overlap_completion_rate": _delta_number(
+                left_no_overlap.get("completion_rate_all_trials"),
+                right_no_overlap.get("completion_rate_all_trials"),
+            ),
+            "native_pass_rate_scored_only": _delta_number(
+                left_perf.get("native_pass_rate_scored_only"),
+                right_perf.get("native_pass_rate_scored_only"),
+            ),
+        }
+
+    left_usage = left.get("usage") or {}
+    right_usage = right.get("usage") or {}
+    usage_delta = None
+    if left_usage and right_usage:
+        usage_delta = {
+            key: _delta_number(left_usage.get(key), right_usage.get(key))
+            for key in TOKEN_KEYS
+        }
+
+    return {
+        "schema_version": 1,
+        "compatible": (left_ctx.get("catalog_sha256") == right_ctx.get("catalog_sha256")
+                       and left_ctx.get("engine_commit") == right_ctx.get("engine_commit")),
+        "compatibility_warnings": warnings,
+        "left": {
+            "model": left_ctx.get("model"),
+            "provider": left_ctx.get("provider"),
+            "run_kind": left_ctx.get("run_kind"),
+            "catalog_sha256": left_ctx.get("catalog_sha256"),
+            "engine_commit": left_ctx.get("engine_commit"),
+        },
+        "right": {
+            "model": right_ctx.get("model"),
+            "provider": right_ctx.get("provider"),
+            "run_kind": right_ctx.get("run_kind"),
+            "catalog_sha256": right_ctx.get("catalog_sha256"),
+            "engine_commit": right_ctx.get("engine_commit"),
+        },
+        "counts_delta": counts_delta,
+        "duration_seconds_delta": _delta_number(left.get("duration_seconds"), right.get("duration_seconds")),
+        "performance_delta": performance_delta,
+        "usage_delta": usage_delta,
+        "cost_usd_delta": _delta_number(left.get("cost_usd"), right.get("cost_usd")),
+    }
+
+
 def write_json(path: Path, value: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("x", encoding="utf-8") as stream:

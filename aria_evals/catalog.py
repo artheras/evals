@@ -55,6 +55,8 @@ def validate_catalog(root: Path) -> dict:
     if not isinstance(tasks, list) or not tasks:
         raise ValueError("Suite needs tasks")
     identifiers = set()
+    required_modules = set()
+    requires_c_compiler = False
     sources = [manifest_path, suite_path]
     for task in tasks:
         if not isinstance(task, dict) or set(task) - TASK_FIELDS:
@@ -69,6 +71,9 @@ def validate_catalog(root: Path) -> dict:
             values = task.get(field, [])
             if not isinstance(values, list) or not all(isinstance(v, str) and v for v in values):
                 raise ValueError("Task list fields need nonempty strings")
+        required_modules.update(task.get("requires", []))
+        if "requires-c-compiler" in task.get("tags", []):
+            requires_c_compiler = True
         if task.get("setup") or task.get("allow_green_start"):
             raise ValueError("Public demonstrations must start red and need no setup commands")
         for field in ("timeout", "solve_timeout"):
@@ -99,4 +104,6 @@ def validate_catalog(root: Path) -> dict:
         content_hash.update(path.read_bytes())
         content_hash.update(b"\0")
     return {"manifest": manifest, "suite_path": suite_path, "fixture_root": fixture_root,
-            "task_ids": sorted(identifiers), "task_count": len(tasks), "content_sha256": content_hash.hexdigest()}
+            "task_ids": sorted(identifiers), "task_count": len(tasks),
+            "requires": sorted(required_modules), "requires_c_compiler": requires_c_compiler,
+            "content_sha256": content_hash.hexdigest()}

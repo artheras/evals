@@ -107,3 +107,65 @@ def test_unpinned_or_shadowed_engine_is_rejected(monkeypatch, tmp_path, change):
         origin=str(tmp_path / ("shadow.py" if change == "origin" else "runner.py"))))
     with pytest.raises(ValueError):
         cli.engine_identity(engine)
+
+
+def test_doctor_reports_host_status(monkeypatch, capsys):
+    fake_engine(monkeypatch)
+    monkeypatch.setattr(cli, "find_c_compiler", lambda: "/usr/bin/cc")
+    monkeypatch.setattr(cli.importlib.util, "find_spec", lambda _: object())
+    assert cli.main(["--root", str(ROOT), "doctor"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["ready_for_calibration"] is True
+    assert payload["ready_for_engine"] is True
+    assert payload["c_compiler"] == "/usr/bin/cc"
+
+
+def test_missing_c_compiler_blocks_check_and_run_early(monkeypatch, tmp_path):
+    fake_engine(monkeypatch)
+    calls = fake_runner(monkeypatch)
+    monkeypatch.setattr(cli, "find_c_compiler", lambda: None)
+    output = tmp_path / "run"
+    assert cli.main(["--root", str(ROOT), "check", "--output", str(output)]) == 2
+    assert not calls and not output.exists()
+
+
+def test_diff_command_compares_run_directories(tmp_path, capsys):
+    left = tmp_path / "left"
+    right = tmp_path / "right"
+    left.mkdir()
+    right.mkdir()
+    base = {
+        "schema_version": 1,
+        "context": {
+            "run_kind": "model_evaluation",
+            "catalog_sha256": "abc",
+            "engine_commit": "def",
+            "model": "openai/m1",
+            "provider": "openai",
+            "repeat": 1,
+            "solve_timeout_seconds": 900,
+        },
+        "counts": {"pass": 10, "fail": 20, "invalid": 0, "error": 0},
+        "duration_seconds": 100.0,
+        "performance": {
+            "completion_rate_all_trials": 10 / 30,
+            "native_pass_rate_scored_only": 10 / 30,
+            "without_engine_suite_overlap": {"trials": 22, "completion_rate_all_trials": 6 / 22},
+        },
+        "usage": {"reported_trials": 30, "trials": 30, "input_tokens": 1000, "output_tokens": 200, "thinking_tokens": 0},
+        "cost_usd": 0.5,
+    }
+    candidate = json.loads(json.dumps(base))
+    candidate["context"]["model"] = "openai/m2"
+    candidate["counts"] = {"pass": 15, "fail": 15, "invalid": 0, "error": 0}
+    candidate["performance"]["completion_rate_all_trials"] = 0.5
+    candidate["cost_usd"] = 0.75
+    (left / "summary.json").write_text(json.dumps(base))
+    (right / "summary.json").write_text(json.dumps(candidate))
+
+    assert cli.main(["diff", str(left), str(right)]) == 0
+    diff = json.loads(capsys.readouterr().out)
+    assert diff["compatible"] is True
+    assert diff["counts_delta"]["pass"] == 5
+    assert diff["counts_delta"]["fail"] == -5
+    assert diff["cost_usd_delta"] == 0.25

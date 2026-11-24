@@ -1,0 +1,19 @@
+name: Bug Report
+description: Report an issue with catalog validation, grader calibration, or CLI reporting
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the bug clearly. Do not paste API keys or private run logs.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Include the command (e.g. aria-evals doctor, aria-evals validate, pytest) and environment details (OS, Python version).
+    validations:
+      required: true

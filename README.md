@@ -1,5 +1,7 @@
 # Aria Evals
 
+English | [简体中文](README_CN.md)
+
 Public evaluation examples and reproducible run records for [Aria Code](https://github.com/artheras/aria-code).
 
 This repository contains 30 original, synthetic public tasks. Each has an executable grader that stays hidden while the agent works, a reference solution, and deliberately incorrect solutions used to calibrate that grader.
@@ -36,6 +38,7 @@ Use Python 3.12 or 3.13 and run commands from this repository's root.
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e '.[dev]'
+aria-evals doctor
 aria-evals validate
 python -m pytest -q tests
 ```
@@ -64,7 +67,7 @@ aria-evals run \
   --output runs/model
 ```
 
-Each output directory must be new. Omitting `--output` selects a unique directory under `runs/`. Generated records include the run manifest, completion record, native output, and an aggregate publication summary. `runs/` is ignored by Git. Review any generated file before sharing it; native output can contain task details and logs.
+Each output directory must be new. Omitting `--output` selects a unique directory under `runs/`. Generated records include the run manifest, completion record, native output, and an aggregate publication summary. `runs/` is ignored by Git. Review any generated file before sharing it; native output can contain task details and logs. Compare two runs with `aria-evals diff runs/baseline runs/model`. See [task anatomy and output schema](docs/task-anatomy.md) for fixture layout and `summary.json` fields.
 
 The wrapper normalizes provider aliases and passes an explicit `provider/model` identifier to Aria. If your model already has a provider prefix, it must agree with `--provider`. For example, `--provider openai --model YOUR_MODEL` is recorded and invoked as `openai/YOUR_MODEL`.
 
@@ -85,7 +88,7 @@ A cost appears only with `--prices FILE`, a dated price table you supply:
  "per_million_tokens": {"input": 0.0, "output": 0.0, "thinking": 0.0}}
 ```
 
-`thinking` defaults to the output rate. The table is read before the run starts, and its date and source are copied into `cost_basis`, because prices change and differ by account. `cost_usd` is set only when every trial reported usage. Otherwise it stays `null` and `cost_usd_partial` prices the trials that did report, with `cost_basis.covers_trials` and `of_trials` saying how many; it is a lower bound, not the cost of the run. In the workflow, a table at `prices/<provider>.json` is used if present. The repository ships no prices: none have been verified here.
+`thinking` defaults to the output rate. The table is read before the run starts, and its date and source are copied into `cost_basis`, because prices change and differ by account. `cost_usd` is set only when every trial reported usage. Otherwise it stays `null` and `cost_usd_partial` prices the trials that did report, with `cost_basis.covers_trials` and `of_trials` saying how many; it is a lower bound, not the cost of the run. In the workflow, a table at `prices/<provider>.json` is used if present. The repository ships no live prices (none have been verified here); copy [`prices/examples/template.json`](prices/examples/template.json) to get started.
 
 ## Reproducibility and scope
 

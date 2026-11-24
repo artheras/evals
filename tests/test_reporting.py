@@ -1,8 +1,9 @@
 import json
+from pathlib import Path
 
 import pytest
 
-from aria_evals.reporting import publication_summary, write_json
+from aria_evals.reporting import diff_summaries, load_prices, publication_summary, write_json
 
 
 def native(*outcomes):
@@ -85,3 +86,22 @@ def test_completion_is_also_reported_without_tasks_that_overlap_the_engine_suite
     assert summary["performance"]["completion_rate_all_trials"] == 0.75
     assert summary["performance"]["without_engine_suite_overlap"] == {"trials": 2, "completion_rate_all_trials": 0.5}
     assert "finance" not in json.dumps(summary)
+
+
+def test_price_template_is_valid_and_diff_flags_incompatibility():
+    template = Path(__file__).resolve().parents[1] / "prices" / "examples" / "template.json"
+    loaded = load_prices(template)
+    assert loaded["per_million_tokens"] == {"input": 0.0, "output": 0.0, "thinking": 0.0}
+
+    left = {
+        "schema_version": 1,
+        "context": {"catalog_sha256": "a", "engine_commit": "1", "run_kind": "model_evaluation", "repeat": 1, "solve_timeout_seconds": 900},
+        "counts": {"pass": 1, "fail": 0, "invalid": 0, "error": 0},
+        "duration_seconds": 1.0,
+        "performance": {"completion_rate_all_trials": 1.0, "native_pass_rate_scored_only": 1.0, "without_engine_suite_overlap": {"trials": 1, "completion_rate_all_trials": 1.0}},
+    }
+    right = json.loads(json.dumps(left))
+    right["context"]["catalog_sha256"] = "b"
+    diff = diff_summaries(left, right)
+    assert diff["compatible"] is False
+    assert "Catalog content digest differs" in diff["compatibility_warnings"]

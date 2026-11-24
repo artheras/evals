@@ -8,6 +8,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 from urllib.parse import urlsplit
@@ -16,7 +17,7 @@ import uuid
 import yaml
 
 from .catalog import validate_catalog
-from .reporting import load_prices, publication_summary, write_json
+from .reporting import diff_summaries, load_prices, publication_summary, write_json
 
 
 def provider_contract():
@@ -80,8 +81,69 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def find_c_compiler() -> str | None:
+    for candidate in ("cc", "gcc", "clang"):
+        found = shutil.which(candidate)
+        if found:
+            return found
+    return None
+
+
+def environment_diagnostics(catalog: dict) -> dict:
+    """Inspect host OS, compiler toolchain, Python dependencies, and pinned runner."""
+    posix_host = os.name == "posix"
+    compiler = find_c_compiler()
+    missing_modules = [
+        name for name in catalog.get("requires", [])
+        if importlib.util.find_spec(name) is None
+    ]
+    runner_error = None
+    try:
+        identity = engine_identity(catalog["manifest"]["engine"])
+    except ValueError as exc:
+        identity = None
+        runner_error = str(exc)
+    issues = []
+    if not posix_host:
+        issues.append("A POSIX host is required by the isolated pytest verifier (-c /dev/null)")
+    if catalog.get("requires_c_compiler") and compiler is None:
+        issues.append("A C compiler (cc, gcc, or clang) is required for tasks tagged requires-c-compiler")
+    if missing_modules:
+        issues.append(f"Missing Python modules declared in requires: {', '.join(missing_modules)}")
+    return {
+        "posix_host": posix_host,
+        "c_compiler": compiler,
+        "missing_python_modules": missing_modules,
+        "runner_ready": identity is not None,
+        "runner_identity": identity,
+        "runner_error": runner_error,
+        "ready_for_calibration": not issues,
+        "ready_for_engine": not issues and identity is not None,
+        "issues": issues,
+    }
+
+
+def check_environment(catalog: dict) -> None:
+    diag = environment_diagnostics(catalog)
+    blocking = []
+    if not diag["posix_host"]:
+        blocking.append("A POSIX host is required by the isolated pytest verifier (-c /dev/null)")
+    if catalog.get("requires_c_compiler") and diag["c_compiler"] is None:
+        blocking.append("A C compiler (cc, gcc, or clang) is required for tasks tagged requires-c-compiler")
+    if blocking:
+        raise ValueError("; ".join(blocking))
+
+
+def _load_summary_arg(path_str: str) -> dict:
+    path = Path(path_str).expanduser().resolve()
+    if path.is_dir():
+        path = path / "summary.json"
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 def execute(root: Path, args) -> int:
     catalog = validate_catalog(root)
+    check_environment(catalog)
     identity = engine_identity(catalog["manifest"]["engine"])
     check = args.command == "check"
     provider, model = (None, None) if check else resolve_model(args.provider, args.model)
@@ -148,6 +210,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--root", type=Path, default=Path.cwd(), help="catalog checkout (default: current directory)")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("validate", help="validate catalog structure and content identity")
+    commands.add_parser("doctor", help="check host OS, C compiler, Python deps, and pinned engine")
+    diff = commands.add_parser("diff", help="compare two summary.json files or run directories")
+    diff.add_argument("left", help="baseline summary.json or run directory")
+    diff.add_argument("right", help="comparison summary.json or run directory")
     check = commands.add_parser("check", help="model-free native preflight; every task must fail its grader")
     check.add_argument("--output", help="new directory for local reports (default: ignored runs/)")
     run = commands.add_parser("run", help="run the real Aria agent on public demonstrations")
@@ -167,6 +233,15 @@ def main(argv=None) -> int:
         if args.command == "validate":
             catalog = validate_catalog(root)
             print(json.dumps({"task_count": catalog["task_count"], "content_sha256": catalog["content_sha256"]}))
+            return 0
+        if args.command == "doctor":
+            catalog = validate_catalog(root)
+            diag = environment_diagnostics(catalog)
+            print(json.dumps(diag, indent=2))
+            return 0 if diag["ready_for_calibration"] else 1
+        if args.command == "diff":
+            result = diff_summaries(_load_summary_arg(args.left), _load_summary_arg(args.right))
+            print(json.dumps(result, ensure_ascii=False, indent=2))
             return 0
         if args.command == "run" and any(not value.strip() or "\n" in value or "\r" in value
                                           for value in (args.model, args.provider)):
