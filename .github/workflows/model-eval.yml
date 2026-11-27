@@ -26,6 +26,11 @@ on:
         required: true
         type: string
         default: "1"
+      require_all_pass:
+        description: "Fail the workflow if any benchmark task fails (default false: exit 0 when a valid scored summary.json is produced)"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -69,6 +74,7 @@ jobs:
           PROVIDER: ${{ inputs.provider }}
           MODEL: ${{ inputs.model }}
           REPEAT: ${{ inputs.repeat }}
+          REQUIRE_ALL_PASS: ${{ inputs.require_all_pass }}
         run: |
           # Export the one key under the name the engine reads, then drop the generic copy.
           case "$PROVIDER" in
@@ -81,16 +87,41 @@ jobs:
           unset SELECTED_KEY
           prices=()
           if [ -f "prices/${PROVIDER}.json" ]; then prices=(--prices "prices/${PROVIDER}.json"); fi
+          status=0
           aria-evals run --provider "$PROVIDER" --model "$MODEL" --repeat "$REPEAT" \
             --solve-timeout 900 --output runs/model "${prices[@]}" || status=$?
-          if [ -f runs/model/summary.json ]; then
-            { echo '```json'; cat runs/model/summary.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          if [ ! -f runs/model/summary.json ]; then
+            echo "::error::Model evaluation did not produce runs/model/summary.json (exit code ${status})."
+            exit "${status:-1}"
           fi
-          exit "${status:-0}"
+          { echo '```json'; cat runs/model/summary.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          # aria-evals run returns 0 only on 100% task pass, 1 when a valid scored summary has
+          # model task failures/errors, and 2 on runner/config/integrity errors. Fail if all
+          # trials errored out (0 scored trials) or if require_all_pass was requested.
+          python - "$status" "$REQUIRE_ALL_PASS" <<'PY'
+          import json, pathlib, sys
+          code = int(sys.argv[1])
+          require_all = sys.argv[2].strip().lower() == "true"
+          summary = json.loads(pathlib.Path("runs/model/summary.json").read_text(encoding="utf-8"))
+          perf = summary.get("performance") or {}
+          scored = int(perf.get("scored_trials") or 0)
+          counts = summary.get("counts") or {}
+          if code >= 2:
+              print(f"::error::aria-evals exited with runner error {code}", file=sys.stderr)
+              sys.exit(code)
+          if scored == 0:
+              print(f"::error::All trials errored out without a single scored attempt: {counts}", file=sys.stderr)
+              sys.exit(1)
+          if require_all and code != 0:
+              sys.exit(code)
+          PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: model-eval-${{ inputs.provider }}-${{ github.run_id }}
-          path: runs/model/summary.json
+          path: |
+            runs/model/summary.json
+            runs/model/manifest.json
+            runs/model/native.json
           if-no-files-found: warn
           retention-days: 90
